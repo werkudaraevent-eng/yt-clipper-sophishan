@@ -1,0 +1,16 @@
+# Supabase CLI config for `supabase start` (local stack). See docs/DEVELOPMENT.md.
+project_id = "sophishan-clipper"
+
+[api]
+port = 54321
+
+[db]
+port = 54322
+major_version = 17
+
+[studio]
+port = 54323
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/auth/callback"]

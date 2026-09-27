@@ -1,0 +1,6 @@
+[
+  { "youtubeUrl": "https://vimeo.com/123", "timeframe": { "start": 0, "end": 60 } },
+  { "youtubeUrl": "https://youtu.be/arj7oStGLkU", "timeframe": { "start": 60, "end": 30 } },
+  { "youtubeUrl": "https://youtu.be/arj7oStGLkU", "timeframe": { "start": 0, "end": 60 }, "layout": "stretch" },
+  { "youtubeUrl": "https://youtu.be/arj7oStGLkU", "timeframe": { "start": 0, "end": 60 }, "captions": { "wordsPerCaption": 9 } }
+]

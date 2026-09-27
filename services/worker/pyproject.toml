@@ -1,0 +1,35 @@
+[project]
+name = "clipper-worker"
+version = "0.1.0"
+description = "Background worker that turns YouTube videos into captioned 9:16 clips"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.8",
+  "psycopg[binary]>=3.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "ruff>=0.6",
+]
+
+[project.scripts]
+clipper-worker = "clipper_worker.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["clipper_worker*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
