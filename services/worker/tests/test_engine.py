@@ -252,3 +252,34 @@ def test_pipeline_renders_clips_from_local_source(tmp_path, layout):
     assert stages[0] == "transcribe" and stages[-1] == "render"
     manifest = json.loads((tmp_path / "out" / "manifest.json").read_text())
     assert manifest["clips"][0]["hook_text"] == "Watch this"
+
+
+def test_claude_highlighter_gateway_uses_forced_tool():
+    from types import SimpleNamespace
+
+    from clipper_worker.engine.highlights import ClaudeHighlighter, ProposedClips
+
+    clip = {
+        "start": "0:10",
+        "end": "0:40",
+        "title": "t",
+        "hook_text": "h",
+        "description": "d",
+        "virality_score": 80,
+        "reason": "r",
+    }
+    calls = {}
+
+    class Messages:
+        def create(self, **kw):
+            calls.update(kw)
+            block = SimpleNamespace(type="tool_use", name="propose_clips", input={"clips": [clip]})
+            return SimpleNamespace(stop_reason="tool_use", content=[block])
+
+    client = SimpleNamespace(messages=Messages())
+    h = ClaudeHighlighter(model="combo", client=client, base_url="https://gw.example/v1/")
+    assert h.base_url == "https://gw.example"
+    out = h.propose("sys", "prompt")
+    assert isinstance(out, ProposedClips) and out.clips[0].virality_score == 80
+    assert calls["tool_choice"] == {"type": "tool", "name": "propose_clips"}
+    assert calls["model"] == "combo"

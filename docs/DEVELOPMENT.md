@@ -48,6 +48,23 @@ export ANTHROPIC_API_KEY=...            # or pass --offline (density heuristic, 
     --length 30to60 --template karaoke --layout auto --out ./out
 ```
 
+### Using an LLM gateway (9Router and similar)
+
+The worker talks to any gateway that speaks the Anthropic Messages API
+(`/v1/messages`), which is what Claude Code uses. Set:
+
+```bash
+export ANTHROPIC_BASE_URL=https://your-gateway.example   # no /v1; a trailing /v1 is stripped
+export ANTHROPIC_AUTH_TOKEN=...                           # the gateway's API key (sent as Bearer)
+export CLIPPER_LLM_MODEL=...                              # a model or combo name the gateway routes
+```
+
+In gateway mode the worker asks for the clip list through a forced tool call
+instead of the structured-output beta, since gateways usually only pass the
+plain Messages API through. The gateway must be reachable from wherever the
+worker runs: a tunnel to a laptop works for testing, but jobs fail whenever
+the laptop sleeps.
+
 Or from a local file plus word timings (`[{"text","start","end"}, ...]`):
 
 ```bash

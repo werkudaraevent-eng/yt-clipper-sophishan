@@ -11,6 +11,12 @@ REPO = Path(__file__).resolve().parents[3]
 FIXTURES = REPO / "fixtures"
 
 
+@pytest.fixture(autouse=True)
+def _no_llm_gateway(monkeypatch):
+    """Tests pick the API mode explicitly; ignore a gateway set in the shell."""
+    monkeypatch.delenv("ANTHROPIC_BASE_URL", raising=False)
+
+
 @pytest.fixture(scope="session")
 def database_url():
     """A throwaway database with every migration applied.

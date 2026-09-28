@@ -12,7 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from .transcript import Word, format_clock, slice_words, to_prompt_lines
 
@@ -260,15 +260,27 @@ def find_highlights(
 
 
 class ClaudeHighlighter:
-    """Highlight proposals from Claude with structured (schema-checked) output."""
+    """Highlight proposals from Claude with structured (schema-checked) output.
 
-    def __init__(self, model: str | None = None, client=None) -> None:
+    With ANTHROPIC_BASE_URL set (a gateway such as 9Router), the request uses a
+    forced tool call instead of the structured-output beta, because gateways
+    usually support only the plain Messages API.
+    """
+
+    TOOL = "propose_clips"
+
+    def __init__(self, model: str | None = None, client=None, base_url: str | None = None) -> None:
         import anthropic
 
         self.model = model or os.environ.get("CLIPPER_LLM_MODEL") or DEFAULT_MODEL
-        self.client = client or anthropic.Anthropic()
+        base_url = base_url if base_url is not None else os.environ.get("ANTHROPIC_BASE_URL")
+        # The SDK appends /v1/messages itself; accept a pasted ".../v1" too.
+        self.base_url = re.sub(r"/v1/?$", "", base_url.rstrip("/")) if base_url else None
+        self.client = client or anthropic.Anthropic(base_url=self.base_url)
 
     def propose(self, system: str, prompt: str) -> ProposedClips:
+        if self.base_url:
+            return self._propose_via_tool(system, prompt)
         response = self.client.beta.messages.parse(
             model=self.model,
             max_tokens=16000,
@@ -285,6 +297,33 @@ class ClaudeHighlighter:
         if response.stop_reason == "max_tokens" or response.parsed_output is None:
             raise RuntimeError(f"Unusable model response (stop_reason={response.stop_reason})")
         return response.parsed_output
+
+    def _propose_via_tool(self, system: str, prompt: str) -> ProposedClips:
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=16000,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+            tools=[
+                {
+                    "name": self.TOOL,
+                    "description": "Submit the proposed clips.",
+                    "input_schema": ProposedClips.model_json_schema(),
+                }
+            ],
+            tool_choice={"type": "tool", "name": self.TOOL},
+        )
+        if response.stop_reason == "refusal":
+            raise RuntimeError("The model declined to analyze this transcript")
+        for block in response.content:
+            if block.type == "tool_use" and block.name == self.TOOL:
+                try:
+                    return ProposedClips.model_validate(block.input)
+                except ValidationError as e:
+                    raise RuntimeError(
+                        f"Model returned clips that do not match the schema: {e}"
+                    ) from e
+        raise RuntimeError(f"Unusable model response (stop_reason={response.stop_reason})")
 
 
 class DensityHighlighter:
