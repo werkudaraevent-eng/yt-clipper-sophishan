@@ -3,13 +3,14 @@ import type { User } from "@supabase/supabase-js";
 import { LOCALES } from "@/lib/i18n/dictionaries";
 import { setLocale } from "@/lib/i18n/actions";
 import { getDictionary, getLocale } from "@/lib/i18n/server";
-import { currentCredits } from "@/lib/session";
+import { currentCredits, currentIsAdmin } from "@/lib/session";
 
 export async function Header({ user }: { user: User | null }) {
-  const [t, locale, credits] = await Promise.all([
+  const [t, locale, credits, isAdmin] = await Promise.all([
     getDictionary(),
     getLocale(),
     currentCredits(user),
+    currentIsAdmin(user),
   ]);
   const initials = (user?.email ?? "?").slice(0, 2).toUpperCase();
   return (
@@ -36,6 +37,11 @@ export async function Header({ user }: { user: User | null }) {
           </form>
           {user ? (
             <form action="/auth/signout" method="post" className="flex items-center gap-3">
+              {isAdmin && (
+                <Link href="/admin" className="text-sm text-muted hover:text-foreground">
+                  {t.admin.link}
+                </Link>
+              )}
               {credits != null && (
                 <span className="rounded bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
                   {credits} {t.header.credits}

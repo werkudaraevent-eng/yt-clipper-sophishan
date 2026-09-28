@@ -1,4 +1,4 @@
-import { supabaseConfigured } from "@/lib/env";
+import { googleAuthEnabled, supabaseConfigured } from "@/lib/env";
 import { getDictionary } from "@/lib/i18n/server";
 import { signInWithEmail, signInWithGoogle } from "./actions";
 
@@ -28,16 +28,20 @@ export default async function LoginPage({
         </p>
       )}
 
-      <form action={signInWithGoogle}>
-        <input type="hidden" name="next" value={next} />
-        <button className="btn-secondary w-full" disabled={!supabaseConfigured}>
-          {t.login.google}
-        </button>
-      </form>
+      {googleAuthEnabled && (
+        <>
+          <form action={signInWithGoogle}>
+            <input type="hidden" name="next" value={next} />
+            <button className="btn-secondary w-full" disabled={!supabaseConfigured}>
+              {t.login.google}
+            </button>
+          </form>
 
-      <div className="flex items-center gap-3 text-xs text-muted">
-        <span className="h-px flex-1 bg-border" /> {t.login.or} <span className="h-px flex-1 bg-border" />
-      </div>
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-border" /> {t.login.or} <span className="h-px flex-1 bg-border" />
+          </div>
+        </>
+      )}
 
       <form action={signInWithEmail} className="flex flex-col gap-2">
         <input type="hidden" name="next" value={next} />

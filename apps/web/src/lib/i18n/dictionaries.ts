@@ -109,6 +109,26 @@ const en = {
     after: "after:",
     waiting: "Waiting for a worker…",
   },
+  admin: {
+    link: "Admin",
+    title: "Admin: credits",
+    searchLabel: "User email",
+    search: "Find user",
+    notFound: "No user with that email.",
+    name: "Name",
+    plan: "Plan",
+    balance: "Credits",
+    amount: "Amount (use a minus sign to deduct)",
+    note: "Reason",
+    notePlaceholder: "e.g. paid via bank transfer",
+    apply: "Apply",
+    done: "Saved. New balance: {balance} credits.",
+    errors: {
+      belowZero: "That would take the balance below 0.",
+      badAmount: "Enter a whole number other than 0.",
+      failed: "Could not save the change.",
+    },
+  },
 };
 
 export type Dictionary = typeof en;
@@ -219,6 +239,26 @@ const id: Dictionary = {
     retrying: "Mencoba lagi",
     after: "setelah:",
     waiting: "Menunggu worker…",
+  },
+  admin: {
+    link: "Admin",
+    title: "Admin: kredit",
+    searchLabel: "Email user",
+    search: "Cari user",
+    notFound: "Tidak ada user dengan email itu.",
+    name: "Nama",
+    plan: "Paket",
+    balance: "Kredit",
+    amount: "Jumlah (pakai tanda minus untuk mengurangi)",
+    note: "Alasan",
+    notePlaceholder: "mis. bayar via transfer bank",
+    apply: "Simpan",
+    done: "Tersimpan. Saldo baru: {balance} kredit.",
+    errors: {
+      belowZero: "Saldo tidak boleh kurang dari 0.",
+      badAmount: "Isi bilangan bulat selain 0.",
+      failed: "Perubahan gagal disimpan.",
+    },
   },
 };
 
