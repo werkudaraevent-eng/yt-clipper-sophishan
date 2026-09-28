@@ -51,5 +51,10 @@ export const jobOptionsSchema = z
     path: ["timeframe", "end"],
   });
 
+export type ClipLength = (typeof CLIP_LENGTHS)[number];
+export type CaptionTemplate = (typeof CAPTION_TEMPLATES)[number];
+export type CaptionPosition = (typeof CAPTION_POSITIONS)[number];
+export type Layout = (typeof LAYOUTS)[number];
+
 export type JobOptionsInput = z.input<typeof jobOptionsSchema>;
 export type JobOptions = z.output<typeof jobOptionsSchema>;

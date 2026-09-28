@@ -1,6 +1,7 @@
 """Thin wrapper over the job-queue SQL functions in supabase/migrations."""
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 class Job:
     id: UUID
     project_id: UUID
+    user_id: UUID
     kind: str
     attempt: int
     max_attempts: int
@@ -34,7 +36,7 @@ class JobQueue:
     def claim(self) -> Job | None:
         row = self.conn.execute(
             """
-            select j.id, j.project_id, j.kind, j.attempt, j.max_attempts, p.options
+            select j.id, j.project_id, p.user_id, j.kind, j.attempt, j.max_attempts, p.options
               from public.claim_job(%s) j
               join public.projects p on p.id = j.project_id
             """,
@@ -53,11 +55,15 @@ class JobQueue:
     def succeed(self, job: Job) -> None:
         self.conn.execute("select public.finish_job(%s, %s, true)", (job.id, self.worker_id))
 
-    def save_results(self, job: Job, result: "PipelineResult") -> None:
+    def save_results(
+        self, job: Job, result: "PipelineResult", paths: dict[Path, str] | None = None
+    ) -> None:
         """Store video metadata and clip rows. Replaces clips of earlier attempts.
 
-        File paths are local to the worker until M2 uploads them to storage.
+        `paths` maps local files to their storage paths; files missing from it
+        are recorded by local path (dev without storage).
         """
+        paths = paths or {}
         src = result.source
         with self.conn.transaction():
             self.conn.execute(
@@ -90,8 +96,9 @@ class JobQueue:
                     """,
                     (
                         job.project_id, clip.position, h.start, h.end, h.title, h.hook_text,
-                        h.description, h.virality_score, h.reason, str(clip.video_path),
-                        str(clip.thumbnail_path),
+                        h.description, h.virality_score, h.reason,
+                        paths.get(clip.video_path, str(clip.video_path)),
+                        paths.get(clip.thumbnail_path, str(clip.thumbnail_path)),
                         Jsonb([{"text": w.text, "start": w.start, "end": w.end}
                                for w in clip.words]),
                     ),

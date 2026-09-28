@@ -1,30 +1,30 @@
-import { CLIP_LENGTHS, LAYOUTS } from "@clipper/shared";
+import { Header } from "@/components/Header";
+import { ProjectList } from "@/components/ProjectList";
+import { supabaseConfigured } from "@/lib/env";
+import { currentUser } from "@/lib/session";
+import { CreateForm } from "./create-form";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string; sort?: string }>;
+}) {
+  const user = await currentUser();
+  const params = await searchParams;
   return (
-    <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-6 px-4 py-16">
-      <h1 className="text-3xl font-bold">Sophishan Clipper</h1>
-      <p className="text-slate-500">
-        Paste a YouTube link and get captioned 9:16 shorts for TikTok, Reels and Shorts.
-      </p>
-      <form className="flex gap-2">
-        <input
-          type="url"
-          disabled
-          placeholder="https://www.youtube.com/watch?v=..."
-          className="flex-1 rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900"
-        />
-        <button
-          type="button"
-          disabled
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white opacity-60"
-        >
-          Get Shorts
-        </button>
-      </form>
-      <p className="text-xs text-slate-500">
-        Coming soon: clip lengths {CLIP_LENGTHS.join(", ")} · layouts {LAYOUTS.join(", ")}
-      </p>
-    </main>
+    <>
+      <Header user={user} />
+      <main className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-10">
+        {!supabaseConfigured && (
+          <p className="mx-auto w-full max-w-lg rounded-md bg-amber-100 p-3 text-sm text-amber-900">
+            Preview mode: Supabase is not configured, so projects cannot be created.
+          </p>
+        )}
+        <div className="mx-auto w-full max-w-lg">
+          <CreateForm disabled={!supabaseConfigured} />
+        </div>
+        {user && <ProjectList {...params} />}
+      </main>
+    </>
   );
 }
