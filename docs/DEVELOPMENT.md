@@ -55,7 +55,7 @@ The worker talks to any gateway that speaks the Anthropic Messages API
 
 ```bash
 export CLIPPER_LLM_BASE_URL=https://your-gateway.example  # a trailing /v1 is stripped
-export CLIPPER_LLM_API_KEY=...                            # the gateway's API key (sent as Bearer)
+export CLIPPER_LLM_API_KEY=...                            # the gateway's API key (Bearer); omit if a proxy injects it
 export CLIPPER_LLM_MODEL=...                              # a model or combo name the gateway routes
 ```
 

@@ -280,8 +280,13 @@ class ClaudeHighlighter:
             if self.base_url:
                 # Own variable names, so a gateway key is never mixed up with
                 # ANTHROPIC_* settings that other tools on the host may use.
+                # The token is always explicit: without it the SDK would fall
+                # back to ANTHROPIC_* from the environment and send that key to
+                # the gateway. The placeholder is for hosts where an egress
+                # proxy injects the real Authorization header.
                 client = anthropic.Anthropic(
-                    base_url=self.base_url, auth_token=os.environ.get("CLIPPER_LLM_API_KEY")
+                    base_url=self.base_url,
+                    auth_token=os.environ.get("CLIPPER_LLM_API_KEY") or "injected-by-proxy",
                 )
             else:
                 client = anthropic.Anthropic()

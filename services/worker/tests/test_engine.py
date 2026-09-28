@@ -283,3 +283,14 @@ def test_claude_highlighter_gateway_uses_forced_tool():
     assert isinstance(out, ProposedClips) and out.clips[0].virality_score == 80
     assert calls["tool_choice"] == {"type": "tool", "name": "propose_clips"}
     assert calls["model"] == "combo"
+
+
+def test_gateway_client_never_sends_ambient_anthropic_key(monkeypatch):
+    from clipper_worker.engine.highlights import ClaudeHighlighter
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "ambient")
+    monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "ambient")
+    monkeypatch.delenv("CLIPPER_LLM_API_KEY", raising=False)
+    h = ClaudeHighlighter(model="m", base_url="https://gw.example")
+    assert "ambient" not in str(h.client.auth_headers)
+    assert h.client.api_key is None
