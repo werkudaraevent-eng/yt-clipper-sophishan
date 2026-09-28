@@ -19,3 +19,5 @@ __pycache__/
 # Worker scratch output
 services/worker/work/
 cookies.txt
+.env.worker
+cookies.txt

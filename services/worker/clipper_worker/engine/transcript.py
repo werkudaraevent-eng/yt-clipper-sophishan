@@ -2,6 +2,7 @@
 
 import json
 import re
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -66,8 +67,16 @@ def slice_words(words: list[Word], start: float, end: float) -> list[Word]:
     return [w for w in words if w.end > start and w.start < end]
 
 
-def transcribe_with_whisper(media_path: Path, language: str | None, model_size: str) -> list[Word]:
-    """Word timings from faster-whisper (optional `asr` extra)."""
+def transcribe_with_whisper(
+    media_path: Path,
+    language: str | None,
+    model_size: str,
+    on_progress: Callable[[float], None] | None = None,
+) -> list[Word]:
+    """Word timings from faster-whisper (optional `asr` extra).
+
+    `on_progress` gets the transcribed fraction of the audio, 0..1.
+    """
     try:
         from faster_whisper import WhisperModel
     except ImportError as exc:  # pragma: no cover - depends on optional extra
@@ -77,7 +86,7 @@ def transcribe_with_whisper(media_path: Path, language: str | None, model_size: 
         ) from exc
 
     model = WhisperModel(model_size, device="auto", compute_type="auto")
-    segments, _info = model.transcribe(
+    segments, info = model.transcribe(
         str(media_path),
         language=None if language in (None, "auto") else language.split("-")[0],
         word_timestamps=True,
@@ -85,6 +94,8 @@ def transcribe_with_whisper(media_path: Path, language: str | None, model_size: 
     )
     words: list[Word] = []
     for segment in segments:
+        if on_progress is not None and info.duration:
+            on_progress(min(segment.end / info.duration, 1.0))
         for w in segment.words or []:
             text = w.word.strip()
             if text:
