@@ -8,7 +8,7 @@ import { fetchVideoMeta, youtubeId } from "@/lib/youtube";
 
 /** `code` names a message in the `errors` dictionary; `error` is raw text (validation, database). */
 export type CreateProjectState = {
-  code?: "notConfigured" | "badForm" | "videoNotFound" | "createFailed";
+  code?: "notConfigured" | "badForm" | "videoNotFound" | "createFailed" | "insufficientCredits";
   error: string | null;
 };
 
@@ -55,6 +55,9 @@ export async function createProject(
     })
     .select("id")
     .single();
+  if (error?.message.includes("insufficient_credits")) {
+    return { code: "insufficientCredits", error: null };
+  }
   if (error || !data) return error ? { error: error.message } : { code: "createFailed", error: null };
 
   redirect(`/projects/${data.id}`);

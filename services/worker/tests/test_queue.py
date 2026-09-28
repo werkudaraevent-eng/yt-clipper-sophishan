@@ -162,3 +162,128 @@ def test_rls_blocks_creating_projects_for_someone_else(conn, make_user):
             )
     finally:
         conn.execute("reset role")
+
+
+# --- credits -----------------------------------------------------------------
+
+
+def balance(conn, uid):
+    row = conn.execute(
+        "select p.credits_remaining, coalesce(sum(l.delta), 0)::int as ledger "
+        "from public.profiles p left join public.credit_ledger l on l.user_id = p.id "
+        "where p.id = %s group by p.credits_remaining",
+        (uid,),
+    ).fetchone()
+    assert row["credits_remaining"] == row["ledger"], "ledger must sum to the balance"
+    return row["credits_remaining"]
+
+
+def test_project_charges_one_credit_per_started_minute(conn, make_user, make_project):
+    uid = make_user()
+    pid = make_project(
+        user_id=uid,
+        options={"youtubeUrl": "https://youtu.be/arj7oStGLkU",
+                 "timeframe": {"start": 30, "end": 301}},
+    )  # fmt: skip
+    charged = conn.execute("select credits_charged from public.projects where id = %s", (pid,))
+    assert charged.fetchone()["credits_charged"] == 5
+    assert balance(conn, uid) == 25
+
+
+def test_credit_cost_uses_known_duration(conn):
+    cost = conn.execute(
+        "select public.project_credit_cost(%s, 120) as c",
+        (psycopg.types.json.Jsonb({"timeframe": {"start": 0, "end": 3600}}),),
+    ).fetchone()["c"]
+    assert cost == 2
+
+
+def test_insufficient_credits_blocks_project(conn, make_user, make_project):
+    uid = make_user()
+    with pytest.raises(psycopg.errors.RaiseException, match="insufficient_credits"):
+        make_project(
+            user_id=uid,
+            options={"youtubeUrl": "https://youtu.be/arj7oStGLkU",
+                     "timeframe": {"start": 0, "end": 3600}},
+        )  # fmt: skip
+    assert balance(conn, uid) == 30
+    assert conn.execute("select count(*) as n from public.projects").fetchone()["n"] == 0
+
+
+def test_final_failure_refunds_credits_once(conn, make_user, make_project):
+    uid = make_user()
+    make_project(user_id=uid)
+    assert balance(conn, uid) == 20
+    q = JobQueue(conn, "w1")
+    for _ in range(3):
+        q.fail(q.claim(), "boom")
+        conn.execute("update public.jobs set run_after = now()")
+    assert balance(conn, uid) == 30
+    conn.execute("update public.projects set status = 'failed', error = 'again'")
+    assert balance(conn, uid) == 30
+
+
+def test_users_cannot_top_up_their_own_credits(conn, make_user):
+    uid = make_user()
+    conn.execute("set role authenticated")
+    try:
+        conn.execute("select set_config('request.jwt.claim.sub', %s, false)", (str(uid),))
+        conn.execute("update public.profiles set ui_language = 'id' where id = %s", (uid,))
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute(
+                "update public.profiles set credits_remaining = 9999 where id = %s", (uid,)
+            )
+    finally:
+        conn.execute("reset role")
+
+
+# --- expiry ------------------------------------------------------------------
+
+
+def test_expiry_marks_projects_and_returns_clip_files(conn, make_project, tmp_path):
+    old, fresh = make_project(), make_project()
+    q = JobQueue(conn, "w1")
+    for _ in range(2):
+        worker_main.process(q, q.claim(), run=fake_run, work_root=tmp_path)
+    conn.execute(
+        "update public.projects set expires_at = now() - interval '1 day' where id = %s", (old,)
+    )
+    assert sorted(q.expire_projects()) == ["c.jpg", "c.mp4"]
+    assert project_status(conn, old)["status"] == "expired"
+    assert project_status(conn, fresh)["status"] == "ready"
+    left = conn.execute("select project_id from public.clips").fetchall()
+    assert [r["project_id"] for r in left] == [fresh]
+    assert q.expire_projects() == []
+
+
+def test_expiry_cancels_queued_job_and_skips_running(conn, make_project):
+    queued, running = make_project(), make_project()
+    conn.execute("update public.projects set expires_at = now() - interval '1 day'")
+    conn.execute(
+        "update public.jobs set run_after = now() + interval '1 hour' where project_id = %s",
+        (queued,),
+    )
+    JobQueue(conn, "w1").claim()  # takes `running`
+    JobQueue(conn, "w1").expire_projects()
+    assert project_status(conn, queued)["status"] == "expired"
+    assert project_status(conn, running)["status"] == "processing"
+    job = conn.execute("select status from public.jobs where project_id = %s", (queued,))
+    assert job.fetchone()["status"] == "failed"
+
+
+def test_worker_expire_deletes_remote_and_local_files(tmp_path):
+    local = tmp_path / "clip.mp4"
+    local.write_bytes(b"x")
+
+    class Q:
+        def expire_projects(self):
+            return ["u/p/clip-01.mp4", str(local)]
+
+    class S:
+        deleted = None
+
+        def delete(self, paths):
+            S.deleted = paths
+
+    assert worker_main.expire(Q(), S()) == 2
+    assert S.deleted == ["u/p/clip-01.mp4"] and not local.exists()

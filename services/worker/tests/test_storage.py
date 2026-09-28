@@ -26,3 +26,23 @@ def test_upload_posts_to_owner_folder(tmp_path):
     assert seen["headers"]["content-type"] == "video/mp4"
     assert seen["headers"]["x-upsert"] == "true"
     assert seen["body"] == b"video"
+
+
+def test_delete_sends_prefixes():
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["method"], seen["url"], seen["body"] = (
+            request.method,
+            str(request.url),
+            request.content,
+        )
+        return httpx.Response(200, json=[])
+
+    storage = ClipStorage(
+        "https://sb.example", "svc", httpx.Client(transport=httpx.MockTransport(handler))
+    )
+    storage.delete(["a/b/clip-01.mp4"])
+    assert seen["method"] == "DELETE"
+    assert seen["url"] == "https://sb.example/storage/v1/object/clips"
+    assert b'"prefixes"' in seen["body"] and b"clip-01.mp4" in seen["body"]

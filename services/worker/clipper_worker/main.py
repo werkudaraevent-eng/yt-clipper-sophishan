@@ -19,6 +19,7 @@ log = logging.getLogger("clipper_worker")
 
 POLL_INTERVAL_SECONDS = float(os.environ.get("CLIPPER_POLL_INTERVAL", "3"))
 WORK_ROOT = Path(os.environ.get("CLIPPER_WORK_DIR", "/tmp/clipper"))
+EXPIRE_INTERVAL_SECONDS = float(os.environ.get("CLIPPER_EXPIRE_INTERVAL", "3600"))
 
 
 def process(
@@ -57,6 +58,20 @@ def process(
             shutil.rmtree(work, ignore_errors=True)
 
 
+def expire(queue: JobQueue, storage: ClipStorage | None) -> int:
+    """Expire overdue projects and delete their files. Returns projects' file count."""
+    paths = queue.expire_projects()
+    remote = [p for p in paths if not p.startswith("/")]
+    if remote and storage is not None:
+        storage.delete(remote)
+    for p in paths:
+        if p.startswith("/"):
+            Path(p).unlink(missing_ok=True)
+    if paths:
+        log.info("expired projects: deleted %d files", len(paths))
+    return len(paths)
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     worker_id = os.environ.get("CLIPPER_WORKER_ID") or f"{socket.gethostname()}-{os.getpid()}"
@@ -76,7 +91,14 @@ def main() -> None:
     signal.signal(signal.SIGINT, stop)
 
     log.info("worker %s polling for jobs", worker_id)
+    next_expiry = 0.0
     while not stopping:
+        if time.monotonic() >= next_expiry:
+            try:
+                expire(queue, storage)
+            except Exception:  # noqa: BLE001 - expiry must not stop the worker
+                log.exception("project expiry failed")
+            next_expiry = time.monotonic() + EXPIRE_INTERVAL_SECONDS
         job = queue.claim()
         if job is None:
             time.sleep(POLL_INTERVAL_SECONDS)
