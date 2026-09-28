@@ -54,8 +54,8 @@ The worker talks to any gateway that speaks the Anthropic Messages API
 (`/v1/messages`), which is what Claude Code uses. Set:
 
 ```bash
-export ANTHROPIC_BASE_URL=https://your-gateway.example   # no /v1; a trailing /v1 is stripped
-export ANTHROPIC_AUTH_TOKEN=...                           # the gateway's API key (sent as Bearer)
+export CLIPPER_LLM_BASE_URL=https://your-gateway.example  # a trailing /v1 is stripped
+export CLIPPER_LLM_API_KEY=...                            # the gateway's API key (sent as Bearer)
 export CLIPPER_LLM_MODEL=...                              # a model or combo name the gateway routes
 ```
 

@@ -103,12 +103,12 @@ def fetch_youtube(options: JobOptions, work: Path, report: ProgressFn) -> Source
 
 
 def default_highlighter(source: Source, options: JobOptions) -> Highlighter:
-    if os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"):
+    if os.environ.get("CLIPPER_LLM_BASE_URL") or os.environ.get("ANTHROPIC_API_KEY"):
         return ClaudeHighlighter()
     if os.environ.get("CLIPPER_ALLOW_OFFLINE_HIGHLIGHTS") == "1":
         log.warning("No Anthropic credentials: using offline density highlights")
         return DensityHighlighter(source.words, options.clip_length_range)
-    raise RuntimeError("ANTHROPIC_API_KEY is not set")
+    raise RuntimeError("Set ANTHROPIC_API_KEY, or CLIPPER_LLM_BASE_URL for a gateway")
 
 
 def run(

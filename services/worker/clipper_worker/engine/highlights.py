@@ -262,7 +262,7 @@ def find_highlights(
 class ClaudeHighlighter:
     """Highlight proposals from Claude with structured (schema-checked) output.
 
-    With ANTHROPIC_BASE_URL set (a gateway such as 9Router), the request uses a
+    With CLIPPER_LLM_BASE_URL set (a gateway such as 9Router), the request uses a
     forced tool call instead of the structured-output beta, because gateways
     usually support only the plain Messages API.
     """
@@ -273,10 +273,19 @@ class ClaudeHighlighter:
         import anthropic
 
         self.model = model or os.environ.get("CLIPPER_LLM_MODEL") or DEFAULT_MODEL
-        base_url = base_url if base_url is not None else os.environ.get("ANTHROPIC_BASE_URL")
+        base_url = base_url if base_url is not None else os.environ.get("CLIPPER_LLM_BASE_URL")
         # The SDK appends /v1/messages itself; accept a pasted ".../v1" too.
         self.base_url = re.sub(r"/v1/?$", "", base_url.rstrip("/")) if base_url else None
-        self.client = client or anthropic.Anthropic(base_url=self.base_url)
+        if client is None:
+            if self.base_url:
+                # Own variable names, so a gateway key is never mixed up with
+                # ANTHROPIC_* settings that other tools on the host may use.
+                client = anthropic.Anthropic(
+                    base_url=self.base_url, auth_token=os.environ.get("CLIPPER_LLM_API_KEY")
+                )
+            else:
+                client = anthropic.Anthropic()
+        self.client = client
 
     def propose(self, system: str, prompt: str) -> ProposedClips:
         if self.base_url:

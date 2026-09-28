@@ -14,7 +14,7 @@ FIXTURES = REPO / "fixtures"
 @pytest.fixture(autouse=True)
 def _no_llm_gateway(monkeypatch):
     """Tests pick the API mode explicitly; ignore a gateway set in the shell."""
-    monkeypatch.delenv("ANTHROPIC_BASE_URL", raising=False)
+    monkeypatch.delenv("CLIPPER_LLM_BASE_URL", raising=False)
 
 
 @pytest.fixture(scope="session")
