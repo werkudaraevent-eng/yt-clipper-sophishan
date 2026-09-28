@@ -122,21 +122,21 @@ export async function AppShell({
       </nav>
 
       <div className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0">
-        <header className="sticky top-0 z-10 flex h-16 items-center gap-2 bg-surface px-2 sm:px-4">
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-2 bg-surface px-4 sm:px-6 lg:px-12">
           {backHref ? (
             <Link
               href={backHref}
               aria-label={t.nav.back}
-              className="state-layer focus-ring flex h-12 w-12 items-center justify-center rounded-full text-on-surface"
+              className="state-layer focus-ring -ml-3 flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-on-surface"
             >
               <Icon name="arrowBack" />
             </Link>
           ) : (
-            <Link href="/" className="pl-2 md:hidden" aria-label="Sophishan Clipper">
+            <Link href="/" className="md:hidden" aria-label="Sophishan Clipper">
               <LogoMark size={32} />
             </Link>
           )}
-          <h1 className="min-w-0 flex-1 truncate px-2 text-title-l text-on-surface">{title}</h1>
+          <h1 className="min-w-0 flex-1 truncate text-title-l text-on-surface">{title}</h1>
           {credits != null && (
             <Link
               href="/credits"
@@ -164,12 +164,16 @@ export async function AppShell({
           </div>
           <span
             title={user.email}
-            className="mx-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tertiary-container text-label-l text-on-tertiary-container"
+            className="ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-tertiary-container text-label-l text-on-tertiary-container"
           >
             {initials}
           </span>
         </header>
-        <main className="flex-1">{children}</main>
+        {/* One body region for every page: M3 margins (16 / 24 / 48 dp), content
+            starts beside the rail and grows with the window up to a cap. */}
+        <main className="flex w-full max-w-[1600px] flex-1 flex-col gap-6 px-4 pt-4 pb-10 sm:px-6 lg:px-12">
+          {children}
+        </main>
       </div>
 
       <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 bg-surface-container md:hidden">
