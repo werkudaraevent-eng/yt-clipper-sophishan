@@ -2,6 +2,8 @@
 
 import json
 import os
+import shutil
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -19,10 +21,20 @@ class VideoInfo:
     raw: dict[str, Any]
 
 
+def _writable_cookies(path: str) -> str:
+    """yt-dlp writes the cookie jar back on exit, so hand it a private copy.
+
+    The original is usually mounted read-only into the container.
+    """
+    copy = Path(tempfile.gettempdir()) / "clipper-yt-cookies.txt"
+    shutil.copyfile(path, copy)
+    return str(copy)
+
+
 def _base_opts() -> dict[str, Any]:
     opts: dict[str, Any] = {"quiet": True, "no_warnings": True, "noprogress": True}
     if cookies := os.environ.get("YTDLP_COOKIES_FILE"):
-        opts["cookiefile"] = cookies
+        opts["cookiefile"] = _writable_cookies(cookies)
     if proxy := os.environ.get("YTDLP_PROXY"):
         opts["proxy"] = proxy
     return opts
