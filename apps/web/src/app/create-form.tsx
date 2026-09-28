@@ -12,6 +12,8 @@ import {
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { RangeSlider, Segmented, Toggle } from "@/components/controls";
 import { TemplatePicker } from "@/components/TemplatePicker";
+import { creditCost } from "@/lib/credits";
+import { fill } from "@/lib/i18n/dictionaries";
 import { useDictionary } from "@/lib/i18n/client";
 import { clock } from "@/lib/format";
 import { LANGUAGES } from "@/lib/languages";
@@ -21,7 +23,7 @@ import { createProject } from "./actions";
 const FALLBACK_DURATION = 3 * 3600;
 const DEFAULT_WINDOW = 600;
 
-export function CreateForm({ disabled }: { disabled?: boolean }) {
+export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?: number | null }) {
   const t = useDictionary();
   const [url, setUrl] = useState("");
   const [meta, setMeta] = useState<VideoMeta | null>(null);
@@ -76,6 +78,7 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
   }, [url]);
 
   const duration = meta?.duration ?? FALLBACK_DURATION;
+  const cost = creditCost(range[0], range[1], meta?.duration);
   const options: JobOptionsInput = useMemo(
     () => ({
       youtubeUrl: url.trim(),
@@ -112,11 +115,16 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
           />
           <button
             className="btn-primary shrink-0 rounded-l-none px-5"
-            disabled={disabled || pending || !meta}
+            disabled={disabled || pending || !meta || (credits != null && cost > credits)}
           >
             {pending ? t.create.starting : t.create.submit}
           </button>
         </div>
+        <p className="mt-1 text-xs text-muted">
+          {credits != null
+            ? fill(t.create.cost, { cost, balance: credits })
+            : fill(t.create.costUnknown, { cost })}
+        </p>
         {metaError && <p className="mt-1 text-sm text-red-600">{t.errors[metaError]}</p>}
         {(state.code || state.error) && (
           <p className="mt-1 text-sm text-red-600">

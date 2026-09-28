@@ -79,6 +79,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         {(status === "queued" || status === "processing") && (
           <Progress projectId={project.id} initial={job ?? null} />
         )}
+        {status === "expired" && (
+          <p className="rounded-md bg-slate-200 p-3 text-sm text-slate-700">{t.project.expired}</p>
+        )}
         {status === "failed" && (
           <p className="rounded-md bg-red-100 p-3 text-sm text-red-800">
             {t.project.failed} {project.error ?? t.project.unknownError}

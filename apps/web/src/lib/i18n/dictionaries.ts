@@ -5,8 +5,19 @@ export const LOCALE_COOKIE = "lang";
 
 const en = {
   meta: { description: "Turn long YouTube videos into captioned 9:16 shorts." },
-  header: { signIn: "Sign in", signOut: "Sign out", language: "Language" },
-  home: { previewMode: "Preview mode: Supabase is not configured, so projects cannot be created." },
+  header: { signIn: "Sign in", signOut: "Sign out", language: "Language", credits: "credits" },
+  home: {
+    previewMode: "Preview mode: Supabase is not configured, so projects cannot be created.",
+    heroTitle: "Turn one long video into a week of shorts",
+    heroSubtitle:
+      "Paste a YouTube link. AI finds the best moments, frames the speaker for 9:16 and adds animated captions.",
+    features: [
+      { title: "Picks the moments", body: "Each clip comes with a title, a hook and a virality score." },
+      { title: "Follows the face", body: "Auto layout keeps the speaker in frame, even when they move." },
+      { title: "Captions that pop", body: "Word-by-word styles, translated into 19 languages if you want." },
+    ],
+    freeNote: "Free to start: 30 credits, 1 credit per minute of video processed.",
+  },
   login: {
     title: "Sign in",
     subtitle: "Turn long videos into shorts in minutes.",
@@ -44,6 +55,8 @@ const en = {
     layoutHint: "Auto follows the speaker's face. Fit keeps the whole frame on a blurred background.",
     direction: "AI direction (optional)",
     directionPlaceholder: 'e.g. "Focus on the money advice" or "Clip 2:00 - 2:50 exactly"',
+    cost: "Uses {cost} credits · {balance} left",
+    costUnknown: "Uses {cost} credits (1 per minute processed)",
   },
   errors: {
     notYoutube: "Not a YouTube video link",
@@ -52,6 +65,7 @@ const en = {
     notConfigured: "Supabase is not configured on this server.",
     badForm: "Could not read the form.",
     createFailed: "Could not create the project.",
+    insufficientCredits: "Not enough credits. Shorten the timeframe or top up.",
   },
   projects: {
     title: "Projects",
@@ -81,6 +95,7 @@ const en = {
     notUploaded: "File not uploaded",
     clip: "Clip",
     download: "Download",
+    expired: "This project expired after 60 days and its clips were deleted.",
   },
   progress: {
     stages: {
@@ -100,8 +115,19 @@ export type Dictionary = typeof en;
 
 const id: Dictionary = {
   meta: { description: "Ubah video YouTube panjang jadi shorts 9:16 lengkap dengan caption." },
-  header: { signIn: "Masuk", signOut: "Keluar", language: "Bahasa" },
-  home: { previewMode: "Mode pratinjau: Supabase belum dikonfigurasi, jadi project belum bisa dibuat." },
+  header: { signIn: "Masuk", signOut: "Keluar", language: "Bahasa", credits: "kredit" },
+  home: {
+    previewMode: "Mode pratinjau: Supabase belum dikonfigurasi, jadi project belum bisa dibuat.",
+    heroTitle: "Satu video panjang, jadi shorts untuk seminggu",
+    heroSubtitle:
+      "Tempel link YouTube. AI mencari momen terbaik, membingkai pembicara ke 9:16, dan menambahkan caption animasi.",
+    features: [
+      { title: "Memilih momen terbaik", body: "Setiap klip punya judul, hook, dan skor viral." },
+      { title: "Mengikuti wajah", body: "Layout otomatis menjaga pembicara tetap di frame, meski bergerak." },
+      { title: "Caption yang menarik", body: "Gaya kata per kata, bisa diterjemahkan ke 19 bahasa." },
+    ],
+    freeNote: "Gratis untuk mulai: 30 kredit, 1 kredit per menit video yang diproses.",
+  },
   login: {
     title: "Masuk",
     subtitle: "Ubah video panjang jadi shorts dalam hitungan menit.",
@@ -140,6 +166,8 @@ const id: Dictionary = {
       "Otomatis mengikuti wajah pembicara. Pas menampilkan seluruh frame di atas latar yang diburamkan.",
     direction: "Arahan untuk AI (opsional)",
     directionPlaceholder: 'mis. "Fokus ke tips keuangan" atau "Potong persis 2:00 - 2:50"',
+    cost: "Memakai {cost} kredit · sisa {balance}",
+    costUnknown: "Memakai {cost} kredit (1 per menit yang diproses)",
   },
   errors: {
     notYoutube: "Bukan link video YouTube",
@@ -148,6 +176,7 @@ const id: Dictionary = {
     notConfigured: "Supabase belum dikonfigurasi di server ini.",
     badForm: "Form tidak bisa dibaca.",
     createFailed: "Project gagal dibuat.",
+    insufficientCredits: "Kredit tidak cukup. Persingkat rentang waktu atau isi ulang kredit.",
   },
   projects: {
     title: "Project",
@@ -177,6 +206,7 @@ const id: Dictionary = {
     notUploaded: "File belum diunggah",
     clip: "Klip",
     download: "Unduh",
+    expired: "Project ini sudah kedaluwarsa setelah 60 hari dan klipnya sudah dihapus.",
   },
   progress: {
     stages: {
@@ -202,4 +232,9 @@ export function isLocale(value: unknown): value is Locale {
 export function localeFromAcceptLanguage(header: string | null): Locale {
   const first = (header ?? "").split(",")[0]?.trim().toLowerCase() ?? "";
   return first.startsWith("id") || first.startsWith("ms") ? "id" : DEFAULT_LOCALE;
+}
+
+/** Fill {name} placeholders in a dictionary string. */
+export function fill(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (m, key) => (key in values ? String(values[key]) : m));
 }

@@ -10,3 +10,15 @@ export async function currentUser(): Promise<User | null> {
   } = await supabase.auth.getUser();
   return user;
 }
+
+/** The signed-in user's remaining credits, or null when signed out. */
+export async function currentCredits(user: User | null): Promise<number | null> {
+  if (!user) return null;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("credits_remaining")
+    .eq("id", user.id)
+    .maybeSingle();
+  return data?.credits_remaining ?? null;
+}
