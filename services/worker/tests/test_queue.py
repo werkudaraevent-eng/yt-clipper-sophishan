@@ -287,3 +287,52 @@ def test_worker_expire_deletes_remote_and_local_files(tmp_path):
 
     assert worker_main.expire(Q(), S()) == 2
     assert S.deleted == ["u/p/clip-01.mp4"] and not local.exists()
+
+
+# --- admin credits -----------------------------------------------------------
+
+
+def _as(conn, uid):
+    conn.execute("set role authenticated")
+    conn.execute("select set_config('request.jwt.claim.sub', %s, false)", (str(uid),))
+
+
+def test_admin_can_find_user_and_adjust_credits(conn, make_user):
+    admin, user = make_user("admin@example.com"), make_user("buyer@example.com")
+    conn.execute("update public.profiles set is_admin = true where id = %s", (admin,))
+    email = conn.execute("select email from auth.users where id = %s", (user,)).fetchone()["email"]
+    _as(conn, admin)
+    try:
+        found = conn.execute(
+            "select * from public.admin_find_user(%s)", (email.upper(),)
+        ).fetchall()
+        assert [(r["id"], r["credits_remaining"]) for r in found] == [(user, 30)]
+        new = conn.execute(
+            "select public.admin_adjust_credits(%s, 100, 'paid via transfer') as b", (user,)
+        ).fetchone()["b"]
+        assert new == 130
+        with pytest.raises(psycopg.errors.CheckViolation):
+            conn.execute("select public.admin_adjust_credits(%s, -500, 'too much')", (user,))
+    finally:
+        conn.execute("reset role")
+    assert balance(conn, user) == 130
+    ledger = conn.execute(
+        "select delta, reason from public.credit_ledger where user_id = %s order by id", (user,)
+    ).fetchall()
+    assert ledger[-1]["delta"] == 100
+    assert ledger[-1]["reason"].startswith("admin: paid via transfer")
+
+
+def test_non_admins_cannot_use_admin_functions(conn, make_user):
+    uid = make_user()
+    _as(conn, uid)
+    try:
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("select * from public.admin_find_user('x@example.com')")
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("select public.admin_adjust_credits(%s, 100, 'me')", (uid,))
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("update public.profiles set is_admin = true where id = %s", (uid,))
+    finally:
+        conn.execute("reset role")
+    assert balance(conn, uid) == 30

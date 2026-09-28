@@ -22,3 +22,11 @@ export async function currentCredits(user: User | null): Promise<number | null> 
     .maybeSingle();
   return data?.credits_remaining ?? null;
 }
+
+/** Whether the signed-in user may open /admin. */
+export async function currentIsAdmin(user: User | null): Promise<boolean> {
+  if (!user) return false;
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("is_admin");
+  return data === true;
+}
