@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -96,26 +97,65 @@ def download_caption_words(info: VideoInfo, language: str | None) -> tuple[str |
     return lang, parse_json3(data)
 
 
-def download_section(url: str, start: float, end: float, out_dir: Path) -> Path:
-    """Download [start, end] of the video as mp4 (H.264/AAC, up to 1080p)."""
+def download_section(
+    url: str,
+    start: float,
+    end: float,
+    out_dir: Path,
+    duration: float = 0,
+    on_progress: Callable[[float], None] | None = None,
+) -> Path:
+    """Download [start, end] of the video as mp4 (H.264/AAC, up to 1080p).
+
+    When the range covers the whole video the file is fetched as is: cutting a
+    range makes ffmpeg re-encode it, which takes minutes and reports nothing.
+    `on_progress` gets the downloaded fraction, 0..1.
+    """
     import yt_dlp
     from yt_dlp.utils import download_range_func
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    opts = {
+    opts: dict[str, Any] = {
         **_base_opts(),
         # >1080p on YouTube is VP9/AV1 only; prefer avc1 so the cut stays cheap.
         "format": (
             "bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=1080]+ba/b[height<=1080]/b"
         ),
         "merge_output_format": "mp4",
-        "download_ranges": download_range_func(None, [(start, end)]),
-        "force_keyframes_at_cuts": True,
         "outtmpl": str(out_dir / "source.%(ext)s"),
     }
+    whole = start <= 0 and duration > 0 and end >= duration - 1
+    if not whole:
+        opts["download_ranges"] = download_range_func(None, [(start, end)])
+        opts["force_keyframes_at_cuts"] = True
+    if on_progress is not None:
+        opts["progress_hooks"] = [_progress_hook(on_progress)]
     with yt_dlp.YoutubeDL(opts) as ydl:
         ydl.download([url])
     matches = sorted(out_dir.glob("source.*"))
     if not matches:
         raise RuntimeError("yt-dlp finished without producing a file")
     return matches[0]
+
+
+def _progress_hook(on_progress: Callable[[float], None]) -> Callable[[dict[str, Any]], None]:
+    """Turn yt-dlp's per-file byte counts into one fraction for all files.
+
+    Video and audio arrive as separate files, one after the other.
+    """
+    files: list[str] = []
+
+    def hook(d: dict[str, Any]) -> None:
+        if d.get("status") != "downloading":
+            return
+        name = d.get("filename") or ""
+        if name not in files:
+            files.append(name)
+        total = d.get("total_bytes") or d.get("total_bytes_estimate")
+        if not total:
+            return
+        count = max(len((d.get("info_dict") or {}).get("requested_formats") or []), 1)
+        done = min(d.get("downloaded_bytes", 0) / total, 1.0)
+        on_progress(min((files.index(name) + done) / count, 1.0))
+
+    return hook

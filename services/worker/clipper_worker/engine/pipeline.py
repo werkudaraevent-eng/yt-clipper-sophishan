@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -23,6 +24,27 @@ from .translate import translate_words
 log = logging.getLogger("clipper_worker.pipeline")
 
 ProgressFn = Callable[[str, float], None]
+
+
+def stage_reporter(
+    report: ProgressFn, stage: str, lo: float, hi: float, every: float = 2.0
+) -> Callable[[float], None]:
+    """Map a 0..1 fraction of one stage onto [lo, hi] of the whole job.
+
+    Reports at most once per `every` seconds; each report is a database write.
+    """
+    last = 0.0
+
+    def on_progress(fraction: float) -> None:
+        nonlocal last
+        now = time.monotonic()
+        if now - last < every and fraction < 1.0:
+            return
+        last = now
+        report(stage, lo + (hi - lo) * max(0.0, min(fraction, 1.0)))
+
+    return on_progress
+
 
 LANGUAGE_NAMES = {
     "en": "English", "id": "Indonesian", "ms": "Malay", "es": "Spanish", "pt": "Portuguese",
@@ -90,7 +112,14 @@ def fetch_youtube(options: JobOptions, work: Path, report: ProgressFn) -> Source
 
     language, words = youtube.download_caption_words(info, options.video_language)
     log.info("captions: %s words (%s)", len(words), language)
-    path = youtube.download_section(options.youtube_url, start, end, work)
+    path = youtube.download_section(
+        options.youtube_url,
+        start,
+        end,
+        work,
+        duration=info.duration,
+        on_progress=stage_reporter(report, "download", 0.03, 0.24),
+    )
     return Source(
         path=path,
         offset=start,
@@ -128,7 +157,10 @@ def run(
     if not source.words:
         log.info("no captions; transcribing with whisper")
         words = transcribe_with_whisper(
-            source.path, options.video_language, os.environ.get("CLIPPER_WHISPER_MODEL", "small")
+            source.path,
+            options.video_language,
+            os.environ.get("CLIPPER_WHISPER_MODEL", "small"),
+            on_progress=stage_reporter(report, "transcribe", 0.25, 0.39),
         )
         source.words = [Word(w.text, w.start + source.offset, w.end + source.offset) for w in words]
     if not source.words:

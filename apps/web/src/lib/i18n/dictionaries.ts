@@ -108,6 +108,11 @@ const en = {
     retrying: "Retrying",
     after: "after:",
     waiting: "Waiting for a worker…",
+    queuedFor: "In the queue for {time}",
+    elapsed: "Total time {time}",
+    lastUpdate: "Last update from the worker {time} ago",
+    stale:
+      "No update from the worker for {time}. It may be stuck; after 30 minutes the job is retried automatically.",
   },
   admin: {
     link: "Admin",
@@ -239,6 +244,11 @@ const id: Dictionary = {
     retrying: "Mencoba lagi",
     after: "setelah:",
     waiting: "Menunggu worker…",
+    queuedFor: "Dalam antrean selama {time}",
+    elapsed: "Total waktu {time}",
+    lastUpdate: "Update terakhir dari worker {time} lalu",
+    stale:
+      "Tidak ada kabar dari worker selama {time}. Mungkin macet; setelah 30 menit job otomatis dicoba ulang.",
   },
   admin: {
     link: "Admin",

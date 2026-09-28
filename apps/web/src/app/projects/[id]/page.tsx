@@ -40,7 +40,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   const [{ data: job }, { data: clips }] = await Promise.all([
     supabase
       .from("jobs")
-      .select("stage, progress, status, attempt, max_attempts, error")
+      .select("stage, progress, status, attempt, max_attempts, error, created_at, locked_at")
       .eq("project_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -77,7 +77,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         </div>
 
         {(status === "queued" || status === "processing") && (
-          <Progress projectId={project.id} initial={job ?? null} />
+          <Progress projectId={project.id} projectStatus={status} initial={job ?? null} />
         )}
         {status === "expired" && (
           <p className="rounded-md bg-slate-200 p-3 text-sm text-slate-700">{t.project.expired}</p>
