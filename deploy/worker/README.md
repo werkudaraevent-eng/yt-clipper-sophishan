@@ -60,11 +60,14 @@ tahap-tahap proses. Tekan Ctrl+C untuk berhenti melihat log (worker tetap jalan)
 
 ## Kalau YouTube menolak unduhan
 
-Pesan seperti "Sign in to confirm you're not a bot" berarti IP diblokir YouTube.
+Pesan seperti "Sign in to confirm you're not a bot" atau "The page needs to be
+reloaded" berarti IP diblokir YouTube.
 Dua cara mengatasinya:
 
 - **Cookies**: ekspor cookies YouTube dari browser (format Netscape, misalnya
-  lewat ekstensi "Get cookies.txt LOCALLY"), simpan sebagai
+  lewat ekstensi "Get cookies.txt LOCALLY") dari **jendela Incognito**: login di
+  Incognito, buka youtube.com/robots.txt, ekspor, lalu tutup jendela itu tanpa
+  logout (supaya YouTube tidak merotasi cookies-nya). Simpan sebagai
   `deploy/worker/cookies.txt`, buka komentar baris `cookies.txt` di
   `docker-compose.yml`, lalu isi `YTDLP_COOKIES_FILE=/secrets/cookies.txt`.
   Pakai akun YouTube cadangan, bukan akun utama.
