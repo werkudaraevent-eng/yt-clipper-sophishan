@@ -12,30 +12,20 @@ import {
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { RangeSlider, Segmented, Toggle } from "@/components/controls";
 import { TemplatePicker } from "@/components/TemplatePicker";
+import { useDictionary } from "@/lib/i18n/client";
 import { clock } from "@/lib/format";
 import { LANGUAGES } from "@/lib/languages";
 import type { VideoMeta } from "@/lib/youtube";
 import { createProject } from "./actions";
 
-const CLIP_LENGTH_LABELS: Record<ClipLength, string> = {
-  lt30: "<30s",
-  "30to60": "30s~60s",
-  "60to90": "60s~90s",
-  original: "Original",
-};
-const LAYOUT_LABELS: Record<Layout, string> = {
-  auto: "Auto",
-  fill: "Fill",
-  fit: "Fit",
-  square: "Square",
-};
 const FALLBACK_DURATION = 3 * 3600;
 const DEFAULT_WINDOW = 600;
 
 export function CreateForm({ disabled }: { disabled?: boolean }) {
+  const t = useDictionary();
   const [url, setUrl] = useState("");
   const [meta, setMeta] = useState<VideoMeta | null>(null);
-  const [metaError, setMetaError] = useState<string | null>(null);
+  const [metaError, setMetaError] = useState<keyof typeof t.errors | null>(null);
   const [language, setLanguage] = useState("auto");
   const [translate, setTranslate] = useState(false);
   const [translateTo, setTranslateTo] = useState("en");
@@ -68,7 +58,7 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
         const body = await res.json();
         if (!res.ok) {
           setMeta(null);
-          setMetaError(body.error ?? "Video not found");
+          setMetaError(body.code === "notYoutube" ? "notYoutube" : "videoNotFound");
           return;
         }
         setMeta(body);
@@ -76,7 +66,7 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
         const duration = body.duration ?? FALLBACK_DURATION;
         setRange([0, Math.min(duration, DEFAULT_WINDOW)]);
       } catch (e) {
-        if ((e as Error).name !== "AbortError") setMetaError("Could not look up the video");
+        if ((e as Error).name !== "AbortError") setMetaError("lookupFailed");
       }
     }, 400);
     return () => {
@@ -108,7 +98,7 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
 
       <div>
         <label htmlFor="url" className="mb-1 block text-sm text-muted">
-          YouTube URL
+          {t.create.url}
         </label>
         <div className="flex">
           <input
@@ -124,20 +114,24 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
             className="btn-primary shrink-0 rounded-l-none px-5"
             disabled={disabled || pending || !meta}
           >
-            {pending ? "Starting…" : "Get Shorts"}
+            {pending ? t.create.starting : t.create.submit}
           </button>
         </div>
-        {metaError && <p className="mt-1 text-sm text-red-600">{metaError}</p>}
-        {state.error && <p className="mt-1 text-sm text-red-600">{state.error}</p>}
+        {metaError && <p className="mt-1 text-sm text-red-600">{t.errors[metaError]}</p>}
+        {(state.code || state.error) && (
+          <p className="mt-1 text-sm text-red-600">
+            {state.code ? t.errors[state.code] : state.error}
+          </p>
+        )}
       </div>
 
       <p className="text-xs text-green-700 dark:text-green-400">
-        *Please check if the language of the video is correct
+        {t.create.checkLanguage}
       </p>
 
       <div className="grid grid-cols-[1fr_1.4fr] items-center gap-3">
         <label htmlFor="lang" className="text-sm text-muted">
-          Video Language
+          {t.create.videoLanguage}
         </label>
         <select
           id="lang"
@@ -145,7 +139,7 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
         >
-          <option value="auto">🌐 Auto detect</option>
+          <option value="auto">🌐 {t.create.autoDetect}</option>
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code}>
               {l.flag} {l.name}
@@ -160,10 +154,10 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
             onChange={(e) => setTranslate(e.target.checked)}
             className="h-4 w-4 accent-[var(--accent)]"
           />
-          Caption Translation
+          {t.create.translation}
         </label>
         <select
-          aria-label="Translate captions to"
+          aria-label={t.create.translateTo}
           className="input"
           value={translateTo}
           disabled={!translate}
@@ -190,7 +184,7 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
       )}
 
       <section>
-        <h2 className="mb-2 text-sm text-muted">Processing Timeframe</h2>
+        <h2 className="mb-2 text-sm text-muted">{t.create.timeframe}</h2>
         <RangeSlider
           min={0}
           max={duration}
@@ -203,30 +197,32 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm text-muted">Preferred Clip length</h2>
+        <h2 className="mb-2 text-sm text-muted">{t.create.clipLength}</h2>
         <Segmented
-          label="Preferred clip length"
+          label={t.create.clipLength}
           value={clipLength}
           onChange={setClipLength}
-          options={CLIP_LENGTHS.map((v) => ({ value: v, label: CLIP_LENGTH_LABELS[v] }))}
+          options={CLIP_LENGTHS.map((v) => ({ value: v, label: t.create.clipLengths[v] }))}
         />
       </section>
 
       <section className="flex flex-col gap-3">
-        <Toggle label="Captions" checked={captions} onChange={setCaptions} />
+        <Toggle label={t.create.captions} checked={captions} onChange={setCaptions} />
         {captions && (
           <>
             <div className="flex items-center justify-between">
-              <h2 className="text-sm text-muted">Template</h2>
+              <h2 className="text-sm text-muted">{t.create.template}</h2>
               <select
-                aria-label="Caption position"
+                aria-label={t.create.position}
                 className="rounded-md border border-accent px-2 py-1 text-xs text-accent"
                 value={position}
                 onChange={(e) => setPosition(e.target.value as CaptionPosition)}
               >
-                <option value="bottom">Caption position · Bottom</option>
-                <option value="middle">Caption position · Middle</option>
-                <option value="top">Caption position · Top</option>
+                {(["bottom", "middle", "top"] as const).map((p) => (
+                  <option key={p} value={p}>
+                    {t.create.position} · {t.create.positions[p]}
+                  </option>
+                ))}
               </select>
             </div>
             <TemplatePicker value={template} onChange={setTemplate} />
@@ -241,19 +237,19 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
           aria-expanded={advanced}
           onClick={() => setAdvanced(!advanced)}
         >
-          Advanced Options <span aria-hidden>{advanced ? "▲" : "▼"}</span>
+          {t.create.advanced} <span aria-hidden>{advanced ? "▲" : "▼"}</span>
         </button>
         {advanced && (
           <div className="flex flex-col gap-5 border-t border-border pt-4">
             <Toggle
-              label="Hook Title"
-              hint="A punchy line on screen for the first 3 seconds"
+              label={t.create.hookTitle}
+              hint={t.create.hookHint}
               checked={hookTitle}
               onChange={setHookTitle}
             />
             <div className="flex items-center justify-between">
               <label htmlFor="wpc" className="text-sm text-muted">
-                Words Per Caption
+                {t.create.wordsPerCaption}
               </label>
               <input
                 id="wpc"
@@ -269,21 +265,18 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
               />
             </div>
             <div>
-              <h3 className="mb-2 text-sm text-muted">Layout</h3>
+              <h3 className="mb-2 text-sm text-muted">{t.create.layout}</h3>
               <Segmented
-                label="Layout"
+                label={t.create.layout}
                 value={layout}
                 onChange={setLayout}
-                options={LAYOUTS.map((v) => ({ value: v, label: LAYOUT_LABELS[v] }))}
+                options={LAYOUTS.map((v) => ({ value: v, label: t.create.layouts[v] }))}
               />
-              <p className="mt-2 text-xs text-muted">
-                Auto follows the speaker&apos;s face. Fit keeps the whole frame on a blurred
-                background.
-              </p>
+              <p className="mt-2 text-xs text-muted">{t.create.layoutHint}</p>
             </div>
             <div>
               <label htmlFor="direction" className="mb-1 block text-sm text-muted">
-                AI direction (optional)
+                {t.create.direction}
               </label>
               <textarea
                 id="direction"
@@ -291,7 +284,7 @@ export function CreateForm({ disabled }: { disabled?: boolean }) {
                 maxLength={1000}
                 value={direction}
                 onChange={(e) => setDirection(e.target.value)}
-                placeholder='e.g. "Focus on the money advice" or "Clip 2:00 - 2:50 exactly"'
+                placeholder={t.create.directionPlaceholder}
                 className="input"
               />
             </div>

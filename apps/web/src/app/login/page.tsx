@@ -1,4 +1,5 @@
 import { supabaseConfigured } from "@/lib/env";
+import { getDictionary } from "@/lib/i18n/server";
 import { signInWithEmail, signInWithGoogle } from "./actions";
 
 export default async function LoginPage({
@@ -7,45 +8,45 @@ export default async function LoginPage({
   searchParams: Promise<{ next?: string; error?: string; sent?: string }>;
 }) {
   const { next = "/", error, sent } = await searchParams;
+  const t = await getDictionary();
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
       <div>
-        <h1 className="text-2xl font-bold">Sign in</h1>
-        <p className="mt-1 text-sm text-muted">Turn long videos into shorts in minutes.</p>
+        <h1 className="text-2xl font-bold">{t.login.title}</h1>
+        <p className="mt-1 text-sm text-muted">{t.login.subtitle}</p>
       </div>
 
       {!supabaseConfigured && (
         <p className="rounded-md bg-amber-100 p-3 text-sm text-amber-900">
-          Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and
-          NEXT_PUBLIC_SUPABASE_ANON_KEY.
+          {t.login.notConfigured}
         </p>
       )}
       {error && <p className="rounded-md bg-red-100 p-3 text-sm text-red-800">{error}</p>}
       {sent && (
         <p className="rounded-md bg-green-100 p-3 text-sm text-green-800">
-          Check your inbox for a sign-in link.
+          {t.login.sent}
         </p>
       )}
 
       <form action={signInWithGoogle}>
         <input type="hidden" name="next" value={next} />
         <button className="btn-secondary w-full" disabled={!supabaseConfigured}>
-          Continue with Google
+          {t.login.google}
         </button>
       </form>
 
       <div className="flex items-center gap-3 text-xs text-muted">
-        <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+        <span className="h-px flex-1 bg-border" /> {t.login.or} <span className="h-px flex-1 bg-border" />
       </div>
 
       <form action={signInWithEmail} className="flex flex-col gap-2">
         <input type="hidden" name="next" value={next} />
         <label htmlFor="email" className="text-sm font-medium">
-          Email
+          {t.login.email}
         </label>
         <input id="email" name="email" type="email" required className="input" />
         <button className="btn-primary" disabled={!supabaseConfigured}>
-          Email me a sign-in link
+          {t.login.emailLink}
         </button>
       </form>
     </main>

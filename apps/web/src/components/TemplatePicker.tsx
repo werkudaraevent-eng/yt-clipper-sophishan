@@ -1,6 +1,7 @@
 "use client";
 
 import type { CaptionTemplate } from "@clipper/shared";
+import { useDictionary } from "@/lib/i18n/client";
 
 const PREVIEWS: Record<CaptionTemplate, { name: string; render: () => React.ReactNode }> = {
   karaoke: {
@@ -38,8 +39,9 @@ export function TemplatePicker({
   value: CaptionTemplate;
   onChange: (value: CaptionTemplate) => void;
 }) {
+  const t = useDictionary();
   return (
-    <div role="radiogroup" aria-label="Caption template" className="grid grid-cols-3 gap-3">
+    <div role="radiogroup" aria-label={t.create.captionTemplate} className="grid grid-cols-3 gap-3">
       {(Object.keys(PREVIEWS) as CaptionTemplate[]).map((key) => {
         const selected = key === value;
         return (

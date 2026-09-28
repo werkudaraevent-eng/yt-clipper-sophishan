@@ -1,4 +1,7 @@
+"use client";
+
 import type { ProjectStatus } from "@clipper/shared";
+import { useDictionary } from "@/lib/i18n/client";
 
 const STYLES: Record<ProjectStatus, string> = {
   queued: "bg-slate-200 text-slate-800",
@@ -9,9 +12,10 @@ const STYLES: Record<ProjectStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: ProjectStatus }) {
+  const t = useDictionary();
   return (
-    <span className={`rounded px-2 py-0.5 text-xs font-semibold capitalize ${STYLES[status]}`}>
-      {status}
+    <span className={`rounded px-2 py-0.5 text-xs font-semibold ${STYLES[status]}`}>
+      {t.status[status]}
     </span>
   );
 }

@@ -6,20 +6,24 @@ import { supabaseConfigured } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import { fetchVideoMeta, youtubeId } from "@/lib/youtube";
 
-export type CreateProjectState = { error: string | null };
+/** `code` names a message in the `errors` dictionary; `error` is raw text (validation, database). */
+export type CreateProjectState = {
+  code?: "notConfigured" | "badForm" | "videoNotFound" | "createFailed";
+  error: string | null;
+};
 
 /** Validate the Create form and queue a project; the database trigger enqueues the job. */
 export async function createProject(
   _prev: CreateProjectState,
   formData: FormData,
 ): Promise<CreateProjectState> {
-  if (!supabaseConfigured) return { error: "Supabase is not configured on this server." };
+  if (!supabaseConfigured) return { code: "notConfigured", error: null };
 
   let raw: unknown;
   try {
     raw = JSON.parse(String(formData.get("options") ?? ""));
   } catch {
-    return { error: "Could not read the form." };
+    return { code: "badForm", error: null };
   }
   const parsed = jobOptionsSchema.safeParse(raw);
   if (!parsed.success) {
@@ -35,7 +39,7 @@ export async function createProject(
 
   const id = youtubeId(options.youtubeUrl);
   const meta = id ? await fetchVideoMeta(id) : null;
-  if (!meta) return { error: "That video could not be found or is not public." };
+  if (!meta) return { code: "videoNotFound", error: null };
 
   const { data, error } = await supabase
     .from("projects")
@@ -51,7 +55,7 @@ export async function createProject(
     })
     .select("id")
     .single();
-  if (error || !data) return { error: error?.message ?? "Could not create the project." };
+  if (error || !data) return error ? { error: error.message } : { code: "createFailed", error: null };
 
   redirect(`/projects/${data.id}`);
 }

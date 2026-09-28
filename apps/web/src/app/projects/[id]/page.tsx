@@ -3,6 +3,7 @@ import type { ProjectStatus } from "@clipper/shared";
 import { Header } from "@/components/Header";
 import { StatusBadge } from "@/components/StatusBadge";
 import { clock } from "@/lib/format";
+import { getDictionary } from "@/lib/i18n/server";
 import { currentUser } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { Progress } from "./progress";
@@ -26,6 +27,7 @@ type Clip = {
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await currentUser();
+  const t = await getDictionary();
   const supabase = await createClient();
 
   const { data: project } = await supabase
@@ -66,7 +68,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold">{project.title ?? "Untitled"}</h1>
+            <h1 className="text-xl font-bold">{project.title ?? t.projects.untitled}</h1>
             <a href={project.youtube_url} className="text-sm text-muted underline" target="_blank">
               {project.youtube_url}
             </a>
@@ -79,7 +81,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
         )}
         {status === "failed" && (
           <p className="rounded-md bg-red-100 p-3 text-sm text-red-800">
-            Processing failed: {project.error ?? "unknown error"}
+            {t.project.failed} {project.error ?? t.project.unknownError}
           </p>
         )}
 
@@ -100,11 +102,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                     />
                   ) : (
                     <div className="flex aspect-[9/16] items-center justify-center rounded-md bg-slate-800 text-xs text-slate-300">
-                      File not uploaded
+                      {t.project.notUploaded}
                     </div>
                   )}
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="text-sm font-semibold">{c.title ?? `Clip ${c.position + 1}`}</h2>
+                    <h2 className="text-sm font-semibold">{c.title ?? `${t.project.clip} ${c.position + 1}`}</h2>
                     {c.virality_score != null && (
                       <span className="shrink-0 rounded bg-accent-soft px-2 py-0.5 text-xs font-bold text-accent">
                         {Math.round(c.virality_score)}
@@ -119,7 +121,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                     </span>
                     {video && (
                       <a href={`${video}&download=clip-${c.position + 1}.mp4`} className="btn-primary px-3 py-1 text-xs">
-                        Download
+                        {t.project.download}
                       </a>
                     )}
                   </div>

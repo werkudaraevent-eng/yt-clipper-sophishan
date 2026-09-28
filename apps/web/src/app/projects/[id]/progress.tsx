@@ -3,6 +3,7 @@
 import { PIPELINE_STAGES } from "@clipper/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useDictionary } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 
 type JobState = {
@@ -14,16 +15,11 @@ type JobState = {
   error: string | null;
 };
 
-const STAGE_LABELS: Record<string, string> = {
-  download: "Downloading video",
-  transcribe: "Reading the transcript",
-  analyze: "Finding the best moments",
-  render: "Rendering clips",
-};
 const POLL_MS = 3000;
 
 export function Progress({ projectId, initial }: { projectId: string; initial: JobState | null }) {
   const router = useRouter();
+  const t = useDictionary();
   const [job, setJob] = useState<JobState | null>(initial);
 
   useEffect(() => {
@@ -64,16 +60,16 @@ export function Progress({ projectId, initial }: { projectId: string; initial: J
             key={stage}
             className={i < currentIndex ? "text-muted line-through" : i === currentIndex ? "font-semibold" : "text-muted"}
           >
-            {i < currentIndex ? "✓" : i === currentIndex ? "…" : "○"} {STAGE_LABELS[stage]}
+            {i < currentIndex ? "✓" : i === currentIndex ? "…" : "○"} {t.progress.stages[stage]}
           </li>
         ))}
       </ol>
       {job?.status === "queued" && job.attempt > 0 && (
         <p className="text-xs text-amber-700">
-          Retrying ({job.attempt}/{job.max_attempts}) after: {job.error}
+          {t.progress.retrying} ({job.attempt}/{job.max_attempts}) {t.progress.after} {job.error}
         </p>
       )}
-      {!current && <p className="text-xs text-muted">Waiting for a worker…</p>}
+      {!current && <p className="text-xs text-muted">{t.progress.waiting}</p>}
     </section>
   );
 }

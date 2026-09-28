@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PROJECT_STATUSES, type ProjectStatus } from "@clipper/shared";
 import { createClient } from "@/lib/supabase/server";
 import { clock } from "@/lib/format";
+import { getDictionary } from "@/lib/i18n/server";
 import { StatusBadge } from "./StatusBadge";
 
 type Row = {
@@ -23,7 +24,7 @@ export async function ProjectList({
   status?: string;
   sort?: string;
 }) {
-  const supabase = await createClient();
+  const [supabase, t] = await Promise.all([createClient(), getDictionary()]);
   let query = supabase
     .from("projects")
     .select("id, title, thumbnail_url, status, created_at, options, clips(count)", {
@@ -40,33 +41,33 @@ export async function ProjectList({
   return (
     <section className="card flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-semibold">Projects</h2>
+        <h2 className="text-lg font-semibold">{t.projects.title}</h2>
         <span className="rounded bg-background px-2 py-0.5 text-xs font-semibold">
-          {count ?? 0} TOTAL
+          {count ?? 0} {t.projects.total}
         </span>
       </div>
-      <p className="text-xs text-muted">Projects are subject to expire in 60 days</p>
+      <p className="text-xs text-muted">{t.projects.expiry}</p>
 
       <form className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]">
-        <input name="q" defaultValue={q} placeholder="Search by title..." className="input" />
-        <select name="status" defaultValue={status ?? ""} className="input" aria-label="Status">
-          <option value="">Status: All</option>
+        <input name="q" defaultValue={q} placeholder={t.projects.search} className="input" />
+        <select name="status" defaultValue={status ?? ""} className="input" aria-label={t.projects.status}>
+          <option value="">{t.projects.statusAll}</option>
           {PROJECT_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {t.status[s]}
             </option>
           ))}
         </select>
-        <select name="sort" defaultValue={sort ?? "newest"} className="input" aria-label="Sort">
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
+        <select name="sort" defaultValue={sort ?? "newest"} className="input" aria-label={t.projects.sort}>
+          <option value="newest">{t.projects.newest}</option>
+          <option value="oldest">{t.projects.oldest}</option>
         </select>
-        <button className="btn-secondary">Apply</button>
+        <button className="btn-secondary">{t.projects.apply}</button>
       </form>
 
       {error && <p className="text-sm text-red-600">{error.message}</p>}
       {!error && data?.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted">No projects yet. Paste a link above.</p>
+        <p className="py-8 text-center text-sm text-muted">{t.projects.empty}</p>
       )}
 
       <ul className="grid gap-4 sm:grid-cols-2">
@@ -88,9 +89,9 @@ export async function ProjectList({
                 </span>
               </div>
               <div className="flex items-center justify-between gap-2 p-3">
-                <span className="line-clamp-2 text-sm font-medium">{p.title ?? "Untitled"}</span>
+                <span className="line-clamp-2 text-sm font-medium">{p.title ?? t.projects.untitled}</span>
                 <span className="shrink-0 text-xs text-muted">
-                  {p.clips[0]?.count ?? 0} clips
+                  {p.clips[0]?.count ?? 0} {t.projects.clips}
                 </span>
               </div>
             </Link>

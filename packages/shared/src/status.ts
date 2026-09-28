@@ -6,5 +6,5 @@ export const JOB_STATUSES = ["queued", "running", "succeeded", "failed"] as cons
 export type JobStatus = (typeof JOB_STATUSES)[number];
 
 /** Pipeline stages shown as progress on the project page, in order. */
-export const PIPELINE_STAGES = ["download", "transcribe", "analyze", "render"] as const;
+export const PIPELINE_STAGES = ["download", "transcribe", "analyze", "render", "upload"] as const;
 export type PipelineStage = (typeof PIPELINE_STAGES)[number];
