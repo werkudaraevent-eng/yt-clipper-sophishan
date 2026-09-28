@@ -13,7 +13,7 @@ export default async function LoginPage({
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-4">
       <div>
         <h1 className="text-2xl font-bold">{t.login.title}</h1>
-        <p className="mt-1 text-sm text-muted">{t.login.subtitle}</p>
+        <p className="mt-1 text-sm text-on-surface-variant">{t.login.subtitle}</p>
       </div>
 
       {!supabaseConfigured && (
@@ -37,8 +37,8 @@ export default async function LoginPage({
             </button>
           </form>
 
-          <div className="flex items-center gap-3 text-xs text-muted">
-            <span className="h-px flex-1 bg-border" /> {t.login.or} <span className="h-px flex-1 bg-border" />
+          <div className="flex items-center gap-3 text-xs text-on-surface-variant">
+            <span className="h-px flex-1 bg-outline-variant" /> {t.login.or} <span className="h-px flex-1 bg-outline-variant" />
           </div>
         </>
       )}

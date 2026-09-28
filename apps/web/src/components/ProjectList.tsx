@@ -19,10 +19,13 @@ export async function ProjectList({
   q,
   status,
   sort,
+  recent,
 }: {
   q?: string;
   status?: string;
   sort?: string;
+  /** Home page variant: the latest few projects, no filters. */
+  recent?: number;
 }) {
   const [supabase, t] = await Promise.all([createClient(), getDictionary()]);
   let query = supabase
@@ -31,7 +34,7 @@ export async function ProjectList({
       count: "exact",
     })
     .order("created_at", { ascending: sort === "oldest" })
-    .limit(50);
+    .limit(recent ?? 50);
   if (q) query = query.ilike("title", `%${q.replace(/[%_]/g, "")}%`);
   if (status && (PROJECT_STATUSES as readonly string[]).includes(status)) {
     query = query.eq("status", status);
@@ -42,13 +45,18 @@ export async function ProjectList({
     <section className="card flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold">{t.projects.title}</h2>
-        <span className="rounded bg-background px-2 py-0.5 text-xs font-semibold">
+        <span className="rounded bg-surface px-2 py-0.5 text-xs font-semibold">
           {count ?? 0} {t.projects.total}
         </span>
+        {recent != null && (count ?? 0) > recent && (
+          <Link href="/projects" className="ml-auto text-label-l text-primary">
+            {t.projects.seeAll}
+          </Link>
+        )}
       </div>
-      <p className="text-xs text-muted">{t.projects.expiry}</p>
+      <p className="text-xs text-on-surface-variant">{t.projects.expiry}</p>
 
-      <form className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]">
+      {!recent && <form className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]">
         <input name="q" defaultValue={q} placeholder={t.projects.search} className="input" />
         <select name="status" defaultValue={status ?? ""} className="input" aria-label={t.projects.status}>
           <option value="">{t.projects.statusAll}</option>
@@ -63,17 +71,17 @@ export async function ProjectList({
           <option value="oldest">{t.projects.oldest}</option>
         </select>
         <button className="btn-secondary">{t.projects.apply}</button>
-      </form>
+      </form>}
 
       {error && <p className="text-sm text-red-600">{error.message}</p>}
       {!error && data?.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted">{t.projects.empty}</p>
+        <p className="py-8 text-center text-sm text-on-surface-variant">{t.projects.empty}</p>
       )}
 
       <ul className="grid gap-4 sm:grid-cols-2">
         {data?.map((p) => (
           <li key={p.id}>
-            <Link href={`/projects/${p.id}`} className="block overflow-hidden rounded-lg border border-border hover:border-accent">
+            <Link href={`/projects/${p.id}`} className="block overflow-hidden rounded-lg border border-outline-variant hover:border-primary">
               <div className="relative aspect-video bg-slate-800">
                 {p.thumbnail_url && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -90,7 +98,7 @@ export async function ProjectList({
               </div>
               <div className="flex items-center justify-between gap-2 p-3">
                 <span className="line-clamp-2 text-sm font-medium">{p.title ?? t.projects.untitled}</span>
-                <span className="shrink-0 text-xs text-muted">
+                <span className="shrink-0 text-xs text-on-surface-variant">
                   {p.clips[0]?.count ?? 0} {t.projects.clips}
                 </span>
               </div>

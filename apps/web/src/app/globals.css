@@ -1,60 +1,320 @@
 @import "tailwindcss";
+@import "@fontsource-variable/plus-jakarta-sans";
 
+/*
+ * Material Design 3 foundations (the rules, not the M3 library).
+ * Color roles: M3 "Fidelity" scheme for seed #00A38C (teal). Success and warning are
+ * M3 custom colors harmonized to the seed. Kept in sync with the Figma file
+ * "Sophishan Clipper – UI Redesign" (collection md.sys.color).
+ * Theme: follows the OS unless <html data-theme="light|dark"> is set.
+ */
 :root {
-  --background: #f7f8fa;
-  --surface: #ffffff;
-  --foreground: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --accent: #2563eb;
-  --accent-soft: #dbeafe;
+  color-scheme: light;
+  --md-primary: #006859;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #008471;
+  --md-on-primary-container: #f4fffa;
+  --md-secondary: #3c665c;
+  --md-on-secondary: #ffffff;
+  --md-secondary-container: #beecdf;
+  --md-on-secondary-container: #426c62;
+  --md-tertiary: #97422c;
+  --md-on-tertiary: #ffffff;
+  --md-tertiary-container: #b75941;
+  --md-on-tertiary-container: #fffbff;
+  --md-error: #ba1a1a;
+  --md-on-error: #ffffff;
+  --md-error-container: #ffdad6;
+  --md-on-error-container: #93000a;
+  --md-success: #006c4e;
+  --md-on-success: #ffffff;
+  --md-success-container: #6efbc6;
+  --md-on-success-container: #002115;
+  --md-warning: #805600;
+  --md-on-warning: #ffffff;
+  --md-warning-container: #ffddb0;
+  --md-on-warning-container: #281800;
+  --md-surface: #f5fbf7;
+  --md-surface-dim: #d5dbd8;
+  --md-surface-bright: #f5fbf7;
+  --md-surface-container-lowest: #ffffff;
+  --md-surface-container-low: #eff5f1;
+  --md-surface-container: #e9efec;
+  --md-surface-container-high: #e3eae6;
+  --md-surface-container-highest: #dee4e0;
+  --md-on-surface: #171d1b;
+  --md-on-surface-variant: #3d4946;
+  --md-outline: #6d7a76;
+  --md-outline-variant: #bccac4;
+  --md-inverse-surface: #2b3230;
+  --md-inverse-on-surface: #ecf2ef;
+  --md-inverse-primary: #5ddbc1;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --md-primary: #5ddbc1;
+  --md-on-primary: #00382f;
+  --md-primary-container: #00a38c;
+  --md-on-primary-container: #003028;
+  --md-secondary: #a3d0c3;
+  --md-on-secondary: #07372f;
+  --md-secondary-container: #255047;
+  --md-on-secondary-container: #95c1b5;
+  --md-tertiary: #ffb4a2;
+  --md-on-tertiary: #5d1705;
+  --md-tertiary-container: #d9745a;
+  --md-on-tertiary-container: #541001;
+  --md-error: #ffb4ab;
+  --md-on-error: #690005;
+  --md-error-container: #93000a;
+  --md-on-error-container: #ffdad6;
+  --md-success: #4ddeab;
+  --md-on-success: #003827;
+  --md-success-container: #00513a;
+  --md-on-success-container: #6efbc6;
+  --md-warning: #ffba44;
+  --md-on-warning: #442c00;
+  --md-warning-container: #614000;
+  --md-on-warning-container: #ffddb0;
+  --md-surface: #0f1513;
+  --md-surface-dim: #0f1513;
+  --md-surface-bright: #343a38;
+  --md-surface-container-lowest: #090f0e;
+  --md-surface-container-low: #171d1b;
+  --md-surface-container: #1b211f;
+  --md-surface-container-high: #252b29;
+  --md-surface-container-highest: #303634;
+  --md-on-surface: #dee4e0;
+  --md-on-surface-variant: #bccac4;
+  --md-outline: #86948f;
+  --md-outline-variant: #3d4946;
+  --md-inverse-surface: #dee4e0;
+  --md-inverse-on-surface: #2b3230;
+  --md-inverse-primary: #006b5b;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b1020;
-    --surface: #111827;
-    --foreground: #e2e8f0;
-    --muted: #94a3b8;
-    --border: #1f2937;
-    --accent: #3b82f6;
-    --accent-soft: #1e3a8a;
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --md-primary: #5ddbc1;
+    --md-on-primary: #00382f;
+    --md-primary-container: #00a38c;
+    --md-on-primary-container: #003028;
+    --md-secondary: #a3d0c3;
+    --md-on-secondary: #07372f;
+    --md-secondary-container: #255047;
+    --md-on-secondary-container: #95c1b5;
+    --md-tertiary: #ffb4a2;
+    --md-on-tertiary: #5d1705;
+    --md-tertiary-container: #d9745a;
+    --md-on-tertiary-container: #541001;
+    --md-error: #ffb4ab;
+    --md-on-error: #690005;
+    --md-error-container: #93000a;
+    --md-on-error-container: #ffdad6;
+    --md-success: #4ddeab;
+    --md-on-success: #003827;
+    --md-success-container: #00513a;
+    --md-on-success-container: #6efbc6;
+    --md-warning: #ffba44;
+    --md-on-warning: #442c00;
+    --md-warning-container: #614000;
+    --md-on-warning-container: #ffddb0;
+    --md-surface: #0f1513;
+    --md-surface-dim: #0f1513;
+    --md-surface-bright: #343a38;
+    --md-surface-container-lowest: #090f0e;
+    --md-surface-container-low: #171d1b;
+    --md-surface-container: #1b211f;
+    --md-surface-container-high: #252b29;
+    --md-surface-container-highest: #303634;
+    --md-on-surface: #dee4e0;
+    --md-on-surface-variant: #bccac4;
+    --md-outline: #86948f;
+    --md-outline-variant: #3d4946;
+    --md-inverse-surface: #dee4e0;
+    --md-inverse-on-surface: #2b3230;
+    --md-inverse-primary: #006b5b;
   }
 }
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-border: var(--border);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
+  --color-primary: var(--md-primary);
+  --color-on-primary: var(--md-on-primary);
+  --color-primary-container: var(--md-primary-container);
+  --color-on-primary-container: var(--md-on-primary-container);
+  --color-secondary: var(--md-secondary);
+  --color-on-secondary: var(--md-on-secondary);
+  --color-secondary-container: var(--md-secondary-container);
+  --color-on-secondary-container: var(--md-on-secondary-container);
+  --color-tertiary: var(--md-tertiary);
+  --color-on-tertiary: var(--md-on-tertiary);
+  --color-tertiary-container: var(--md-tertiary-container);
+  --color-on-tertiary-container: var(--md-on-tertiary-container);
+  --color-error: var(--md-error);
+  --color-on-error: var(--md-on-error);
+  --color-error-container: var(--md-error-container);
+  --color-on-error-container: var(--md-on-error-container);
+  --color-success: var(--md-success);
+  --color-on-success: var(--md-on-success);
+  --color-success-container: var(--md-success-container);
+  --color-on-success-container: var(--md-on-success-container);
+  --color-warning: var(--md-warning);
+  --color-on-warning: var(--md-on-warning);
+  --color-warning-container: var(--md-warning-container);
+  --color-on-warning-container: var(--md-on-warning-container);
+  --color-surface: var(--md-surface);
+  --color-surface-dim: var(--md-surface-dim);
+  --color-surface-bright: var(--md-surface-bright);
+  --color-surface-container-lowest: var(--md-surface-container-lowest);
+  --color-surface-container-low: var(--md-surface-container-low);
+  --color-surface-container: var(--md-surface-container);
+  --color-surface-container-high: var(--md-surface-container-high);
+  --color-surface-container-highest: var(--md-surface-container-highest);
+  --color-on-surface: var(--md-on-surface);
+  --color-on-surface-variant: var(--md-on-surface-variant);
+  --color-outline: var(--md-outline);
+  --color-outline-variant: var(--md-outline-variant);
+  --color-inverse-surface: var(--md-inverse-surface);
+  --color-inverse-on-surface: var(--md-inverse-on-surface);
+  --color-inverse-primary: var(--md-inverse-primary);
+
+  --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
+
+  /* M3 shape scale */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 28px;
+
+  /* M3 elevation levels */
+  --shadow-elev-1: 0 1px 2px rgb(0 0 0 / 0.3), 0 1px 3px 1px rgb(0 0 0 / 0.15);
+  --shadow-elev-2: 0 1px 2px rgb(0 0 0 / 0.3), 0 2px 6px 2px rgb(0 0 0 / 0.15);
+  --shadow-elev-3: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 8px 3px rgb(0 0 0 / 0.15);
+
+  /* M3 type scale (display/headline use the emphasized weight) */
+  --text-display-l: 3.5625rem;
+  --text-display-l--line-height: 4rem;
+  --text-display-l--letter-spacing: -0.016em;
+  --text-display-l--font-weight: 700;
+  --text-display-m: 2.8125rem;
+  --text-display-m--line-height: 3.25rem;
+  --text-display-m--font-weight: 700;
+  --text-display-s: 2.25rem;
+  --text-display-s--line-height: 2.75rem;
+  --text-display-s--font-weight: 700;
+  --text-headline-l: 2rem;
+  --text-headline-l--line-height: 2.5rem;
+  --text-headline-l--font-weight: 700;
+  --text-headline-m: 1.75rem;
+  --text-headline-m--line-height: 2.25rem;
+  --text-headline-m--font-weight: 700;
+  --text-headline-s: 1.5rem;
+  --text-headline-s--line-height: 2rem;
+  --text-headline-s--font-weight: 600;
+  --text-title-l: 1.375rem;
+  --text-title-l--line-height: 1.75rem;
+  --text-title-l--font-weight: 600;
+  --text-title-m: 1rem;
+  --text-title-m--line-height: 1.5rem;
+  --text-title-m--letter-spacing: 0.009em;
+  --text-title-m--font-weight: 600;
+  --text-title-s: 0.875rem;
+  --text-title-s--line-height: 1.25rem;
+  --text-title-s--letter-spacing: 0.007em;
+  --text-title-s--font-weight: 600;
+  --text-body-l: 1rem;
+  --text-body-l--line-height: 1.5rem;
+  --text-body-l--letter-spacing: 0.031em;
+  --text-body-m: 0.875rem;
+  --text-body-m--line-height: 1.25rem;
+  --text-body-m--letter-spacing: 0.018em;
+  --text-body-s: 0.75rem;
+  --text-body-s--line-height: 1rem;
+  --text-body-s--letter-spacing: 0.033em;
+  --text-label-l: 0.875rem;
+  --text-label-l--line-height: 1.25rem;
+  --text-label-l--letter-spacing: 0.007em;
+  --text-label-l--font-weight: 600;
+  --text-label-m: 0.75rem;
+  --text-label-m--line-height: 1rem;
+  --text-label-m--letter-spacing: 0.042em;
+  --text-label-m--font-weight: 600;
+  --text-label-s: 0.6875rem;
+  --text-label-s--line-height: 1rem;
+  --text-label-s--letter-spacing: 0.045em;
+  --text-label-s--font-weight: 600;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--md-surface);
+  color: var(--md-on-surface);
+  font-family: var(--font-sans);
 }
 
+/*
+ * M3 state layer: an overlay in the content color. Hover 8%, focus 10%,
+ * pressed 10%. Disabled elements drop it (content 38%, container 12%).
+ */
+@utility state-layer {
+  position: relative;
+  isolation: isolate;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms;
+  }
+  &:hover::after {
+    opacity: 0.08;
+  }
+  &:focus-visible::after,
+  &:active::after {
+    opacity: 0.1;
+  }
+  &:disabled::after,
+  &[aria-disabled="true"]::after {
+    opacity: 0;
+  }
+}
+
+@utility focus-ring {
+  &:focus-visible {
+    outline: 3px solid var(--md-secondary);
+    outline-offset: 2px;
+  }
+}
+
+/*
+ * Shared control styles, following the M3 component specs:
+ * text field (outlined, 4dp corners), common buttons (40dp, fully rounded),
+ * outlined card (12dp), filter chip (32dp, 8dp corners).
+ */
 @layer components {
   .input {
-    @apply w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-accent;
+    @apply min-h-12 w-full rounded-xs border border-outline bg-transparent px-4 py-3 text-body-l text-on-surface outline-none placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary disabled:opacity-38;
   }
   .btn-primary {
-    @apply rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply state-layer focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-6 text-label-l text-on-primary disabled:cursor-not-allowed disabled:bg-on-surface/12 disabled:text-on-surface/38;
   }
   .btn-secondary {
-    @apply rounded-md border border-border bg-surface px-4 py-2 text-sm font-medium hover:bg-background disabled:cursor-not-allowed disabled:opacity-50;
+    @apply state-layer focus-ring inline-flex h-10 items-center justify-center gap-2 rounded-full border border-outline-variant px-6 text-label-l text-primary disabled:cursor-not-allowed disabled:text-on-surface/38;
   }
   .card {
-    @apply rounded-lg border border-border bg-surface p-4;
+    @apply rounded-md border border-outline-variant bg-surface-container-low p-4;
   }
   .chip {
-    @apply rounded-md border border-transparent bg-background px-3 py-1.5 text-sm text-muted;
+    @apply state-layer focus-ring inline-flex h-8 items-center gap-2 rounded-sm border border-outline-variant px-4 text-label-l text-on-surface-variant;
   }
   .chip[aria-pressed="true"] {
-    @apply border-accent bg-accent-soft font-semibold text-accent;
+    @apply border-transparent bg-secondary-container text-on-secondary-container;
   }
 }

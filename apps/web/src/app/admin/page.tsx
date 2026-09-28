@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { Header } from "@/components/Header";
+import { AppShell } from "@/components/AppShell";
 import { fill } from "@/lib/i18n/dictionaries";
 import { getDictionary } from "@/lib/i18n/server";
 import { currentIsAdmin, currentUser } from "@/lib/session";
@@ -35,9 +35,8 @@ export default async function AdminPage({
   }
 
   return (
-    <>
-      <Header user={user} />
-      <main className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-10">
+    <AppShell user={user} title={t.admin.title}>
+      <div className="mx-auto flex max-w-lg flex-col gap-6 px-4 py-10">
         <h1 className="text-2xl font-bold">{t.admin.title}</h1>
 
         <form className="flex flex-col gap-2">
@@ -61,18 +60,18 @@ export default async function AdminPage({
           </p>
         )}
 
-        {email && !found && <p className="text-sm text-muted">{t.admin.notFound}</p>}
+        {email && !found && <p className="text-sm text-on-surface-variant">{t.admin.notFound}</p>}
 
         {found && (
           <section className="card flex flex-col gap-4">
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-              <dt className="text-muted">Email</dt>
+              <dt className="text-on-surface-variant">Email</dt>
               <dd className="break-all">{found.email}</dd>
-              <dt className="text-muted">{t.admin.name}</dt>
+              <dt className="text-on-surface-variant">{t.admin.name}</dt>
               <dd>{found.display_name ?? "-"}</dd>
-              <dt className="text-muted">{t.admin.plan}</dt>
+              <dt className="text-on-surface-variant">{t.admin.plan}</dt>
               <dd>{found.plan}</dd>
-              <dt className="text-muted">{t.admin.balance}</dt>
+              <dt className="text-on-surface-variant">{t.admin.balance}</dt>
               <dd className="font-semibold">{found.credits_remaining}</dd>
             </dl>
             <form action={adjustCredits} className="flex flex-col gap-2">
@@ -90,7 +89,7 @@ export default async function AdminPage({
             </form>
           </section>
         )}
-      </main>
-    </>
+      </div>
+    </AppShell>
   );
 }

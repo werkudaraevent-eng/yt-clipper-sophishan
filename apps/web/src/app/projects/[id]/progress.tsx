@@ -86,9 +86,9 @@ export function Progress({
           <span className="tabular-nums">{percent}%</span>
         </p>
       )}
-      <div className="h-2 overflow-hidden rounded bg-border">
+      <div className="h-2 overflow-hidden rounded bg-outline-variant">
         <div
-          className={`h-full transition-all ${stale ? "bg-amber-500" : "bg-accent"} ${running ? "animate-pulse" : ""}`}
+          className={`h-full transition-all ${stale ? "bg-amber-500" : "bg-primary"} ${running ? "animate-pulse" : ""}`}
           style={{ width: `${Math.max(percent, running ? 2 : 0)}%` }}
         />
       </div>
@@ -96,14 +96,14 @@ export function Progress({
         {PIPELINE_STAGES.map((stage, i) => (
           <li
             key={stage}
-            className={i < currentIndex ? "text-muted line-through" : i === currentIndex ? "font-semibold" : "text-muted"}
+            className={i < currentIndex ? "text-on-surface-variant line-through" : i === currentIndex ? "font-semibold" : "text-on-surface-variant"}
           >
             {i < currentIndex ? "✓" : i === currentIndex ? "…" : "○"} {t.progress.stages[stage]}
           </li>
         ))}
       </ol>
       {job && running && job.locked_at && (
-        <p className="text-xs text-muted tabular-nums">
+        <p className="text-xs text-on-surface-variant tabular-nums">
           {t.progress.elapsed.replace("{time}", duration(now - Date.parse(job.created_at)))} ·{" "}
           {t.progress.lastUpdate.replace("{time}", duration(sinceUpdate))}
         </p>
@@ -115,7 +115,7 @@ export function Progress({
         </p>
       )}
       {!running && (
-        <p className="text-xs text-muted tabular-nums">
+        <p className="text-xs text-on-surface-variant tabular-nums">
           {t.progress.waiting}
           {job && ` ${t.progress.queuedFor.replace("{time}", duration(now - Date.parse(job.created_at)))}`}
         </p>

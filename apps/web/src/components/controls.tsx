@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { Icon } from "./ui/Icon";
 
 export function Toggle({
   checked,
@@ -16,9 +17,9 @@ export function Toggle({
   const id = useId();
   return (
     <div className="flex items-center justify-between gap-4">
-      <label htmlFor={id} className="text-sm text-muted">
+      <label htmlFor={id} className="text-title-s text-on-surface">
         {label}
-        {hint && <span className="block text-xs">{hint}</span>}
+        {hint && <span className="block text-body-s text-on-surface-variant">{hint}</span>}
       </label>
       <button
         id={id}
@@ -26,15 +27,19 @@ export function Toggle({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-          checked ? "bg-accent" : "bg-slate-300 dark:bg-slate-600"
+        className={`focus-ring relative h-8 w-13 shrink-0 rounded-full border-2 transition-colors ${
+          checked ? "border-primary bg-primary" : "border-outline bg-surface-container-highest"
         }`}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-            checked ? "left-5.5" : "left-0.5"
+          className={`absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full transition-all ${
+            checked
+              ? "left-[22px] h-6 w-6 bg-on-primary text-primary"
+              : "left-[6px] h-4 w-4 bg-outline"
           }`}
-        />
+        >
+          {checked && <Icon name="check" size={16} />}
+        </span>
       </button>
     </div>
   );
@@ -52,18 +57,26 @@ export function Segmented<T extends string>({
   label: string;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          className="chip"
-          aria-pressed={o.value === value}
-          onClick={() => onChange(o.value)}
-        >
-          {o.label}
-        </button>
-      ))}
+    <div role="group" aria-label={label} className="flex w-full">
+      {options.map((o, i) => {
+        const selected = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onChange(o.value)}
+            className={`state-layer focus-ring flex h-10 min-w-12 flex-1 items-center justify-center gap-2 border border-outline px-2 text-label-l whitespace-nowrap sm:px-3 ${
+              i === 0 ? "rounded-l-full" : "-ml-px"
+            } ${i === options.length - 1 ? "rounded-r-full" : ""} ${
+              selected ? "bg-secondary-container text-on-secondary-container" : "text-on-surface"
+            }`}
+          >
+            {selected && <Icon name="check" size={18} className="hidden sm:block" />}
+            {o.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -90,19 +103,19 @@ export function RangeSlider({
   const left = ((start - min) / span) * 100;
   const right = ((end - min) / span) * 100;
   const thumb =
-    "pointer-events-none absolute inset-x-0 top-0 h-5 w-full appearance-none bg-transparent " +
-    "[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 " +
-    "[&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none " +
-    "[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent " +
-    "[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 " +
-    "[&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:rounded-full " +
-    "[&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-accent";
+    "pointer-events-none absolute inset-x-0 top-0 h-11 w-full appearance-none bg-transparent " +
+    "[&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-11 " +
+    "[&::-webkit-slider-thumb]:w-1 [&::-webkit-slider-thumb]:appearance-none " +
+    "[&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary " +
+    "[&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-11 " +
+    "[&::-moz-range-thumb]:w-1 [&::-moz-range-thumb]:rounded-full " +
+    "[&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary";
   return (
     <div>
-      <div className="relative h-5">
-        <div className="absolute inset-x-0 top-2 h-1 rounded bg-border" />
+      <div className="relative h-11">
+        <div className="absolute inset-x-0 top-3.5 h-4 rounded-full bg-secondary-container" />
         <div
-          className="absolute top-2 h-1 rounded bg-accent"
+          className="absolute top-3.5 h-4 rounded-xs bg-primary"
           style={{ left: `${left}%`, width: `${right - left}%` }}
         />
         <input
@@ -127,8 +140,8 @@ export function RangeSlider({
         />
       </div>
       <div className="mt-2 flex justify-between text-xs">
-        <span className="rounded bg-accent-soft px-2 py-0.5 text-accent">{format(start)}</span>
-        <span className="rounded bg-accent-soft px-2 py-0.5 text-accent">{format(end)}</span>
+        <span className="rounded-sm bg-inverse-surface px-2 py-0.5 text-label-m text-inverse-on-surface">{format(start)}</span>
+        <span className="rounded-sm bg-inverse-surface px-2 py-0.5 text-label-m text-inverse-on-surface">{format(end)}</span>
       </div>
     </div>
   );

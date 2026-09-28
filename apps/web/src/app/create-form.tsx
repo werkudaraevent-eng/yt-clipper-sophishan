@@ -100,7 +100,7 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
       <input type="hidden" name="options" value={JSON.stringify(options)} />
 
       <div>
-        <label htmlFor="url" className="mb-1 block text-sm text-muted">
+        <label htmlFor="url" className="mb-1 block text-sm text-on-surface-variant">
           {t.create.url}
         </label>
         <div className="flex">
@@ -120,7 +120,7 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
             {pending ? t.create.starting : t.create.submit}
           </button>
         </div>
-        <p className="mt-1 text-xs text-muted">
+        <p className="mt-1 text-xs text-on-surface-variant">
           {credits != null
             ? fill(t.create.cost, { cost, balance: credits })
             : fill(t.create.costUnknown, { cost })}
@@ -138,7 +138,7 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
       </p>
 
       <div className="grid grid-cols-[1fr_1.4fr] items-center gap-3">
-        <label htmlFor="lang" className="text-sm text-muted">
+        <label htmlFor="lang" className="text-sm text-on-surface-variant">
           {t.create.videoLanguage}
         </label>
         <select
@@ -155,12 +155,12 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
           ))}
         </select>
 
-        <label className="flex items-center gap-2 text-sm text-muted">
+        <label className="flex items-center gap-2 text-sm text-on-surface-variant">
           <input
             type="checkbox"
             checked={translate}
             onChange={(e) => setTranslate(e.target.checked)}
-            className="h-4 w-4 accent-[var(--accent)]"
+            className="h-4 w-4 accent-primary"
           />
           {t.create.translation}
         </label>
@@ -192,7 +192,7 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
       )}
 
       <section>
-        <h2 className="mb-2 text-sm text-muted">{t.create.timeframe}</h2>
+        <h2 className="mb-2 text-sm text-on-surface-variant">{t.create.timeframe}</h2>
         <RangeSlider
           min={0}
           max={duration}
@@ -205,7 +205,7 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm text-muted">{t.create.clipLength}</h2>
+        <h2 className="mb-2 text-sm text-on-surface-variant">{t.create.clipLength}</h2>
         <Segmented
           label={t.create.clipLength}
           value={clipLength}
@@ -219,10 +219,10 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
         {captions && (
           <>
             <div className="flex items-center justify-between">
-              <h2 className="text-sm text-muted">{t.create.template}</h2>
+              <h2 className="text-sm text-on-surface-variant">{t.create.template}</h2>
               <select
                 aria-label={t.create.position}
-                className="rounded-md border border-accent px-2 py-1 text-xs text-accent"
+                className="rounded-md border border-primary px-2 py-1 text-xs text-primary"
                 value={position}
                 onChange={(e) => setPosition(e.target.value as CaptionPosition)}
               >
@@ -248,7 +248,7 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
           {t.create.advanced} <span aria-hidden>{advanced ? "▲" : "▼"}</span>
         </button>
         {advanced && (
-          <div className="flex flex-col gap-5 border-t border-border pt-4">
+          <div className="flex flex-col gap-5 border-t border-outline-variant pt-4">
             <Toggle
               label={t.create.hookTitle}
               hint={t.create.hookHint}
@@ -256,7 +256,7 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
               onChange={setHookTitle}
             />
             <div className="flex items-center justify-between">
-              <label htmlFor="wpc" className="text-sm text-muted">
+              <label htmlFor="wpc" className="text-sm text-on-surface-variant">
                 {t.create.wordsPerCaption}
               </label>
               <input
@@ -273,17 +273,17 @@ export function CreateForm({ disabled, credits }: { disabled?: boolean; credits?
               />
             </div>
             <div>
-              <h3 className="mb-2 text-sm text-muted">{t.create.layout}</h3>
+              <h3 className="mb-2 text-sm text-on-surface-variant">{t.create.layout}</h3>
               <Segmented
                 label={t.create.layout}
                 value={layout}
                 onChange={setLayout}
                 options={LAYOUTS.map((v) => ({ value: v, label: t.create.layouts[v] }))}
               />
-              <p className="mt-2 text-xs text-muted">{t.create.layoutHint}</p>
+              <p className="mt-2 text-xs text-on-surface-variant">{t.create.layoutHint}</p>
             </div>
             <div>
-              <label htmlFor="direction" className="mb-1 block text-sm text-muted">
+              <label htmlFor="direction" className="mb-1 block text-sm text-on-surface-variant">
                 {t.create.direction}
               </label>
               <textarea

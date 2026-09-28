@@ -6,6 +6,29 @@ export const LOCALE_COOKIE = "lang";
 const en = {
   meta: { description: "Turn long YouTube videos into captioned 9:16 shorts." },
   header: { signIn: "Sign in", signOut: "Sign out", language: "Language", credits: "credits" },
+  nav: {
+    home: "Home",
+    projects: "Projects",
+    credits: "Credits",
+    admin: "Admin",
+    account: "Account",
+    newProject: "New project",
+    back: "Back",
+    theme: "Switch light or dark theme",
+  },
+  creditsPage: {
+    title: "Credits",
+    balance: "Balance",
+    rule: "1 credit per started minute of video processed. Failed projects are refunded automatically.",
+    history: "Credit history",
+    empty: "No credit activity yet.",
+    reasons: {
+      signup_grant: "Starting credits",
+      project: "Project",
+      refund_failed: "Refund: project failed",
+      admin: "Adjustment",
+    },
+  },
   home: {
     previewMode: "Preview mode: Supabase is not configured, so projects cannot be created.",
     heroTitle: "Turn one long video into a week of shorts",
@@ -81,6 +104,7 @@ const en = {
     empty: "No projects yet. Paste a link above.",
     untitled: "Untitled",
     clips: "clips",
+    seeAll: "See all",
   },
   status: {
     queued: "Queued",
@@ -141,6 +165,29 @@ export type Dictionary = typeof en;
 const id: Dictionary = {
   meta: { description: "Ubah video YouTube panjang jadi shorts 9:16 lengkap dengan caption." },
   header: { signIn: "Masuk", signOut: "Keluar", language: "Bahasa", credits: "kredit" },
+  nav: {
+    home: "Beranda",
+    projects: "Proyek",
+    credits: "Kredit",
+    admin: "Admin",
+    account: "Akun",
+    newProject: "Proyek baru",
+    back: "Kembali",
+    theme: "Ganti tema terang atau gelap",
+  },
+  creditsPage: {
+    title: "Kredit",
+    balance: "Saldo",
+    rule: "1 kredit per menit video yang diproses. Proyek yang gagal otomatis dikembalikan kreditnya.",
+    history: "Riwayat kredit",
+    empty: "Belum ada aktivitas kredit.",
+    reasons: {
+      signup_grant: "Kredit awal",
+      project: "Proyek",
+      refund_failed: "Refund: proyek gagal",
+      admin: "Penyesuaian",
+    },
+  },
   home: {
     previewMode: "Mode pratinjau: Supabase belum dikonfigurasi, jadi project belum bisa dibuat.",
     heroTitle: "Satu video panjang, jadi shorts untuk seminggu",
@@ -217,6 +264,7 @@ const id: Dictionary = {
     empty: "Belum ada project. Tempel link di atas.",
     untitled: "Tanpa judul",
     clips: "klip",
+    seeAll: "Lihat semua",
   },
   status: {
     queued: "Antre",

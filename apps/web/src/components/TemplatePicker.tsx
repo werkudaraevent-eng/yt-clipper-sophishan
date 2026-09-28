@@ -55,12 +55,12 @@ export function TemplatePicker({
           >
             <span
               className={`flex aspect-[9/16] w-full items-end justify-center rounded-md bg-gradient-to-b from-slate-600 to-slate-900 pb-[30%] ${
-                selected ? "ring-3 ring-accent" : ""
+                selected ? "ring-3 ring-primary" : ""
               }`}
             >
               {PREVIEWS[key].render()}
             </span>
-            <span className={`text-xs ${selected ? "font-semibold text-accent" : "text-muted"}`}>
+            <span className={`text-xs ${selected ? "font-semibold text-primary" : "text-on-surface-variant"}`}>
               {PREVIEWS[key].name}
             </span>
           </button>

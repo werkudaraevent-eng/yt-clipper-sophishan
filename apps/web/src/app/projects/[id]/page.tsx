@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { ProjectStatus } from "@clipper/shared";
-import { Header } from "@/components/Header";
+import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { clock } from "@/lib/format";
 import { getDictionary } from "@/lib/i18n/server";
@@ -63,13 +63,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   const status = project.status as ProjectStatus;
   return (
-    <>
-      <Header user={user} />
-      <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
+    <AppShell user={user} title={t.nav.projects} backHref="/projects">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold">{project.title ?? t.projects.untitled}</h1>
-            <a href={project.youtube_url} className="text-sm text-muted underline" target="_blank">
+            <a href={project.youtube_url} className="text-sm text-on-surface-variant underline" target="_blank">
               {project.youtube_url}
             </a>
           </div>
@@ -111,14 +110,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                   <div className="flex items-start justify-between gap-2">
                     <h2 className="text-sm font-semibold">{c.title ?? `${t.project.clip} ${c.position + 1}`}</h2>
                     {c.virality_score != null && (
-                      <span className="shrink-0 rounded bg-accent-soft px-2 py-0.5 text-xs font-bold text-accent">
+                      <span className="shrink-0 rounded bg-secondary-container px-2 py-0.5 text-xs font-bold text-primary">
                         {Math.round(c.virality_score)}
                       </span>
                     )}
                   </div>
                   {c.hook_text && <p className="text-sm">“{c.hook_text}”</p>}
-                  {c.description && <p className="text-xs text-muted">{c.description}</p>}
-                  <div className="mt-auto flex items-center justify-between text-xs text-muted">
+                  {c.description && <p className="text-xs text-on-surface-variant">{c.description}</p>}
+                  <div className="mt-auto flex items-center justify-between text-xs text-on-surface-variant">
                     <span>
                       {clock(c.start_seconds)} - {clock(c.end_seconds)}
                     </span>
@@ -133,7 +132,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             })}
           </ul>
         )}
-      </main>
-    </>
+      </div>
+    </AppShell>
   );
 }
