@@ -1,0 +1,17 @@
+[
+  {
+    "youtubeUrl": "https://www.youtube.com/watch?v=arj7oStGLkU",
+    "timeframe": { "start": 0, "end": 600 }
+  },
+  {
+    "youtubeUrl": "https://youtu.be/arj7oStGLkU",
+    "videoLanguage": "id",
+    "captionTranslation": "en",
+    "timeframe": { "start": 120, "end": 1800 },
+    "clipLength": "60to90",
+    "captions": { "enabled": true, "template": "box", "position": "middle", "wordsPerCaption": 2 },
+    "hookTitle": false,
+    "layout": "fit",
+    "aiDirection": "Ambil bagian 2:00 - 2:50"
+  }
+]

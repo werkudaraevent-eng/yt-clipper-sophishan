@@ -1,0 +1,59 @@
+# Local stack for the worker + queue: Postgres with the migrations applied,
+# the worker, and the Next.js dev server. For Supabase Auth/Storage locally use
+# `supabase start` instead (see docs/DEVELOPMENT.md).
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 20
+
+  migrate:
+    image: postgres:17
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
+    volumes:
+      - ./supabase:/supabase:ro
+    entrypoint: ["sh", "/supabase/dev/apply.sh"]
+
+  worker:
+    build: services/worker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
+      CLIPPER_WORKER_ID: worker-1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLIPPER_LLM_BASE_URL: ${CLIPPER_LLM_BASE_URL:-}
+      CLIPPER_LLM_API_KEY: ${CLIPPER_LLM_API_KEY:-}
+      CLIPPER_LLM_MODEL: ${CLIPPER_LLM_MODEL:-}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      YTDLP_COOKIES_FILE: ${YTDLP_COOKIES_FILE:-}
+      YTDLP_PROXY: ${YTDLP_PROXY:-}
+    volumes:
+      - worker-work:/work
+
+  web:
+    image: node:22-slim
+    working_dir: /repo
+    command: sh -c "corepack enable && pnpm install --frozen-lockfile && pnpm dev --hostname 0.0.0.0"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/repo
+      - /repo/node_modules
+      - /repo/apps/web/node_modules
+      - /repo/packages/shared/node_modules
+
+volumes:
+  worker-work:

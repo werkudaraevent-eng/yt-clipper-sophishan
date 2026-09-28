@@ -1,0 +1,1 @@
+"""Sophishan Clipper background worker."""
