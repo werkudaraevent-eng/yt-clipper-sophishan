@@ -50,8 +50,9 @@ export ANTHROPIC_API_KEY=...            # or pass --offline (density heuristic, 
 
 ### Using an LLM gateway (9Router and similar)
 
-The worker talks to any gateway that speaks the Anthropic Messages API
-(`/v1/messages`), which is what Claude Code uses. Set:
+The worker talks to any gateway with an OpenAI-compatible
+`/v1/chat/completions` endpoint, which 9Router exposes for every model it
+routes. Set:
 
 ```bash
 export CLIPPER_LLM_BASE_URL=https://your-gateway.example  # a trailing /v1 is stripped
@@ -59,9 +60,9 @@ export CLIPPER_LLM_API_KEY=...                            # the gateway's API ke
 export CLIPPER_LLM_MODEL=...                              # a model or combo name the gateway routes
 ```
 
-In gateway mode the worker asks for the clip list through a forced tool call
-instead of the structured-output beta, since gateways usually only pass the
-plain Messages API through. The gateway must be reachable from wherever the
+In gateway mode the worker spells the clip schema out in the prompt and reads
+the JSON from the reply text, because 9Router drops tools and `response_format`
+for some providers (and answers even `/v1/messages` in OpenAI format). The gateway must be reachable from wherever the
 worker runs: a tunnel to a laptop works for testing, but jobs fail whenever
 the laptop sleeps.
 

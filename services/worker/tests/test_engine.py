@@ -254,7 +254,7 @@ def test_pipeline_renders_clips_from_local_source(tmp_path, layout):
     assert manifest["clips"][0]["hook_text"] == "Watch this"
 
 
-def test_claude_highlighter_gateway_uses_forced_tool():
+def test_claude_highlighter_gateway_uses_chat_completions():
     from types import SimpleNamespace
 
     from clipper_worker.engine.highlights import ClaudeHighlighter, ProposedClips
@@ -269,20 +269,22 @@ def test_claude_highlighter_gateway_uses_forced_tool():
         "reason": "r",
     }
     calls = {}
+    reply = "```json\n" + json.dumps({"clips": [clip]}) + "\n```"
 
-    class Messages:
-        def create(self, **kw):
-            calls.update(kw)
-            block = SimpleNamespace(type="tool_use", name="propose_clips", input={"clips": [clip]})
-            return SimpleNamespace(stop_reason="tool_use", content=[block])
+    class Http:
+        def post(self, path, json):
+            calls.update(json, path=path)
+            # 9Router-style reply: JSON in the text, wrapped in a code fence.
+            body = {"choices": [{"message": {"content": reply}, "finish_reason": "stop"}]}
+            return SimpleNamespace(status_code=200, json=lambda: body, text="")
 
-    client = SimpleNamespace(messages=Messages())
-    h = ClaudeHighlighter(model="combo", client=client, base_url="https://gw.example/v1/")
+    h = ClaudeHighlighter(model="cx/gpt-6-astra", http=Http(), base_url="https://gw.example/v1/")
     assert h.base_url == "https://gw.example"
     out = h.propose("sys", "prompt")
     assert isinstance(out, ProposedClips) and out.clips[0].virality_score == 80
-    assert calls["tool_choice"] == {"type": "tool", "name": "propose_clips"}
-    assert calls["model"] == "combo"
+    assert calls["path"] == "/v1/chat/completions"
+    assert calls["model"] == "cx/gpt-6-astra"
+    assert "virality_score" in calls["messages"][0]["content"]
 
 
 def test_gateway_client_never_sends_ambient_anthropic_key(monkeypatch):
@@ -292,5 +294,7 @@ def test_gateway_client_never_sends_ambient_anthropic_key(monkeypatch):
     monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "ambient")
     monkeypatch.delenv("CLIPPER_LLM_API_KEY", raising=False)
     h = ClaudeHighlighter(model="m", base_url="https://gw.example")
-    assert "ambient" not in str(h.client.auth_headers)
-    assert h.client.api_key is None
+    assert "authorization" not in h.http.headers
+    monkeypatch.setenv("CLIPPER_LLM_API_KEY", "gw-key")
+    h = ClaudeHighlighter(model="m", base_url="https://gw.example")
+    assert h.http.headers["authorization"] == "Bearer gw-key"

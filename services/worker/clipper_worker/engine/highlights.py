@@ -5,6 +5,7 @@ jipraks/yt-short-clipper (MIT). Structured outputs replace its free-text JSON
 parsing, so the prompt no longer needs quoting rules.
 """
 
+import json
 import math
 import os
 import re
@@ -262,39 +263,42 @@ def find_highlights(
 class ClaudeHighlighter:
     """Highlight proposals from Claude with structured (schema-checked) output.
 
-    With CLIPPER_LLM_BASE_URL set (a gateway such as 9Router), the request uses a
-    forced tool call instead of the structured-output beta, because gateways
-    usually support only the plain Messages API.
+    With CLIPPER_LLM_BASE_URL set (a gateway such as 9Router), the request goes
+    to the gateway's OpenAI-compatible /v1/chat/completions instead. 9Router
+    answers even /v1/messages in OpenAI format and drops tools and
+    response_format for some providers, so the schema is spelled out in the
+    prompt and the JSON is read from the reply text.
     """
 
-    TOOL = "propose_clips"
-
-    def __init__(self, model: str | None = None, client=None, base_url: str | None = None) -> None:
-        import anthropic
-
+    def __init__(
+        self, model: str | None = None, client=None, base_url: str | None = None, http=None
+    ) -> None:
         self.model = model or os.environ.get("CLIPPER_LLM_MODEL") or DEFAULT_MODEL
         base_url = base_url if base_url is not None else os.environ.get("CLIPPER_LLM_BASE_URL")
-        # The SDK appends /v1/messages itself; accept a pasted ".../v1" too.
+        # Accept a pasted ".../v1" too; the path is appended per request.
         self.base_url = re.sub(r"/v1/?$", "", base_url.rstrip("/")) if base_url else None
-        if client is None:
-            if self.base_url:
+        self.client = client
+        self.http = http
+        if self.base_url:
+            if http is None:
+                import httpx
+
                 # Own variable names, so a gateway key is never mixed up with
                 # ANTHROPIC_* settings that other tools on the host may use.
-                # The token is always explicit: without it the SDK would fall
-                # back to ANTHROPIC_* from the environment and send that key to
-                # the gateway. The placeholder is for hosts where an egress
-                # proxy injects the real Authorization header.
-                client = anthropic.Anthropic(
-                    base_url=self.base_url,
-                    auth_token=os.environ.get("CLIPPER_LLM_API_KEY") or "injected-by-proxy",
-                )
-            else:
-                client = anthropic.Anthropic()
-        self.client = client
+                # Without a key no Authorization header is sent, for hosts
+                # where an egress proxy injects it.
+                headers = {}
+                if key := os.environ.get("CLIPPER_LLM_API_KEY"):
+                    headers["Authorization"] = f"Bearer {key}"
+                self.http = httpx.Client(base_url=self.base_url, headers=headers, timeout=600)
+        elif client is None:
+            import anthropic
+
+            self.client = anthropic.Anthropic()
 
     def propose(self, system: str, prompt: str) -> ProposedClips:
         if self.base_url:
-            return self._propose_via_tool(system, prompt)
+            return self._propose_via_gateway(system, prompt)
         response = self.client.beta.messages.parse(
             model=self.model,
             max_tokens=16000,
@@ -312,32 +316,46 @@ class ClaudeHighlighter:
             raise RuntimeError(f"Unusable model response (stop_reason={response.stop_reason})")
         return response.parsed_output
 
-    def _propose_via_tool(self, system: str, prompt: str) -> ProposedClips:
-        response = self.client.messages.create(
-            model=self.model,
-            max_tokens=16000,
-            system=system,
-            messages=[{"role": "user", "content": prompt}],
-            tools=[
-                {
-                    "name": self.TOOL,
-                    "description": "Submit the proposed clips.",
-                    "input_schema": ProposedClips.model_json_schema(),
-                }
-            ],
-            tool_choice={"type": "tool", "name": self.TOOL},
+    def _propose_via_gateway(self, system: str, prompt: str) -> ProposedClips:
+        schema = json.dumps(ProposedClips.model_json_schema())
+        system += (
+            "\n\nReply with one JSON object and nothing else (no prose, no code "
+            f"fence). It must match this JSON schema:\n{schema}"
         )
-        if response.stop_reason == "refusal":
-            raise RuntimeError("The model declined to analyze this transcript")
-        for block in response.content:
-            if block.type == "tool_use" and block.name == self.TOOL:
-                try:
-                    return ProposedClips.model_validate(block.input)
-                except ValidationError as e:
-                    raise RuntimeError(
-                        f"Model returned clips that do not match the schema: {e}"
-                    ) from e
-        raise RuntimeError(f"Unusable model response (stop_reason={response.stop_reason})")
+        response = self.http.post(
+            "/v1/chat/completions",
+            json={
+                "model": self.model,
+                "max_tokens": 16000,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt},
+                ],
+            },
+        )
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"LLM gateway returned HTTP {response.status_code}: {response.text[:300]}"
+            )
+        try:
+            choice = response.json()["choices"][0]
+            text = choice["message"]["content"] or ""
+        except (ValueError, KeyError, IndexError, TypeError) as e:
+            raise RuntimeError(f"Unexpected LLM gateway response: {response.text[:300]}") from e
+        if choice.get("finish_reason") == "length":
+            raise RuntimeError("The model's answer was cut off (max_tokens)")
+        try:
+            return ProposedClips.model_validate_json(_extract_json(text))
+        except (ValueError, ValidationError) as e:
+            raise RuntimeError(f"Model returned clips that do not match the schema: {e}") from e
+
+
+def _extract_json(text: str) -> str:
+    """The JSON object in a reply, tolerating a code fence or prose around it."""
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end < start:
+        raise ValueError(f"no JSON object in model reply: {text[:200]!r}")
+    return text[start : end + 1]
 
 
 class DensityHighlighter:
