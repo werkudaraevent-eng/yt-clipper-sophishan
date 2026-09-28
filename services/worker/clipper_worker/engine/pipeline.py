@@ -18,6 +18,7 @@ from .highlights import (
 )
 from .render import RenderSettings, render_clip
 from .transcript import Word, load_words, slice_words, transcribe_with_whisper
+from .translate import translate_words
 
 log = logging.getLogger("clipper_worker.pipeline")
 
@@ -142,8 +143,9 @@ def run(
     output_language = LANGUAGE_NAMES.get(
         (target or "").split("-")[0], "the same language as the transcript"
     )
+    highlighter = highlighter or default_highlighter(source, options)
     highlights = find_highlights(
-        highlighter or default_highlighter(source, options),
+        highlighter,
         source.words,
         title=source.title,
         window=window,
@@ -161,18 +163,35 @@ def run(
         words_per_caption=options.captions.words_per_caption,
         hook_title=options.hook_title,
     )
+    translate_to = _translation_target(options, source)
+    if translate_to and not hasattr(highlighter, "structured"):
+        log.warning("caption translation needs an LLM; keeping original captions")
+        translate_to = None
+
     clips: list[RenderedClip] = []
     for i, h in enumerate(highlights):
         report("render", 0.5 + 0.5 * i / len(highlights))
+        words = slice_words(source.words, h.start, h.end)
+        if translate_to and options.captions.enabled:
+            words = translate_words(highlighter, words, translate_to, log=log.info)
         video, thumb = render_clip(
-            source.path, source.offset, h, source.words, settings, work, f"clip-{i + 1:02d}"
+            source.path, source.offset, h, words, settings, work, f"clip-{i + 1:02d}"
         )
-        clips.append(RenderedClip(i, h, video, thumb, slice_words(source.words, h.start, h.end)))
+        clips.append(RenderedClip(i, h, video, thumb, words))
     report("render", 1.0)
 
     result = PipelineResult(source, clips)
     (work / "manifest.json").write_text(json.dumps(result.manifest(), ensure_ascii=False, indent=2))
     return result
+
+
+def _translation_target(options: JobOptions, source: Source) -> str | None:
+    """Display name of the caption language, or None when no translation is needed."""
+    target = (options.caption_translation or "").split("-")[0]
+    spoken = (source.language or options.video_language or "").split("-")[0]
+    if not target or target == spoken:
+        return None
+    return LANGUAGE_NAMES.get(target, target)
 
 
 def local_source(video: Path, words_file: Path, title: str, language: str | None) -> Source:

@@ -11,7 +11,7 @@ import os
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -25,6 +25,9 @@ MAX_DIRECTION_CHARS = 1000
 RANGE_TOLERANCE_SECONDS = 8.0
 # Clips may miss the requested length by this much before they are rejected.
 LENGTH_TOLERANCE_SECONDS = 5.0
+
+
+M = TypeVar("M", bound=BaseModel)
 
 
 class ProposedClip(BaseModel):
@@ -297,14 +300,18 @@ class ClaudeHighlighter:
             self.client = anthropic.Anthropic()
 
     def propose(self, system: str, prompt: str) -> ProposedClips:
+        return self.structured(system, prompt, ProposedClips)
+
+    def structured(self, system: str, prompt: str, schema: type[M]) -> M:
+        """One request whose answer is validated against the pydantic `schema`."""
         if self.base_url:
-            return self._propose_via_gateway(system, prompt)
+            return self._structured_via_gateway(system, prompt, schema)
         response = self.client.beta.messages.parse(
             model=self.model,
             max_tokens=16000,
             system=system,
             messages=[{"role": "user", "content": prompt}],
-            output_format=ProposedClips,
+            output_format=schema,
             # On a policy decline the API retries on a fallback model in the
             # same call instead of returning nothing.
             betas=["server-side-fallback-2026-07-01"],
@@ -316,11 +323,11 @@ class ClaudeHighlighter:
             raise RuntimeError(f"Unusable model response (stop_reason={response.stop_reason})")
         return response.parsed_output
 
-    def _propose_via_gateway(self, system: str, prompt: str) -> ProposedClips:
-        schema = json.dumps(ProposedClips.model_json_schema())
+    def _structured_via_gateway(self, system: str, prompt: str, schema: type[M]) -> M:
+        schema_json = json.dumps(schema.model_json_schema())
         system += (
             "\n\nReply with one JSON object and nothing else (no prose, no code "
-            f"fence). It must match this JSON schema:\n{schema}"
+            f"fence). It must match this JSON schema:\n{schema_json}"
         )
         response = self.http.post(
             "/v1/chat/completions",
@@ -345,9 +352,9 @@ class ClaudeHighlighter:
         if choice.get("finish_reason") == "length":
             raise RuntimeError("The model's answer was cut off (max_tokens)")
         try:
-            return ProposedClips.model_validate_json(_extract_json(text))
+            return schema.model_validate_json(_extract_json(text))
         except (ValueError, ValidationError) as e:
-            raise RuntimeError(f"Model returned clips that do not match the schema: {e}") from e
+            raise RuntimeError(f"Model reply does not match the schema: {e}") from e
 
 
 def _extract_json(text: str) -> str:

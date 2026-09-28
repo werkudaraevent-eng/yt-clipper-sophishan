@@ -298,3 +298,40 @@ def test_gateway_client_never_sends_ambient_anthropic_key(monkeypatch):
     monkeypatch.setenv("CLIPPER_LLM_API_KEY", "gw-key")
     h = ClaudeHighlighter(model="m", base_url="https://gw.example")
     assert h.http.headers["authorization"] == "Bearer gw-key"
+
+
+@ffmpeg
+def test_pipeline_translates_captions(tmp_path):
+    from clipper_worker.engine import pipeline
+    from clipper_worker.engine.translate import TranslatedSegment, TranslatedSegments
+    from clipper_worker.options import JobOptions
+
+    video = tmp_path / "in.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+         "testsrc2=s=640x360:r=25:d=20", "-f", "lavfi", "-i", "sine=d=20",
+         "-shortest", "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+         "-c:a", "aac", str(video)],
+        check=True,
+    )  # fmt: skip
+    words = [Word(f"word{i}", 1 + i * 0.4, 1.3 + i * 0.4) for i in range(45)]
+    source = pipeline.Source(path=video, offset=0.0, words=words, title="T", language="en")
+
+    class Translating(FakeHighlighter):
+        def structured(self, system, prompt, schema):
+            n = prompt.count("\n[") + 1
+            return TranslatedSegments(
+                segments=[TranslatedSegment(id=i, text=f"kata{i} lain") for i in range(n)]
+            )
+
+    options = JobOptions.model_validate({
+        "youtubeUrl": "https://youtu.be/arj7oStGLkU", "timeframe": {"start": 0, "end": 20},
+        "clipLength": "lt30", "layout": "fill", "captionTranslation": "id",
+    })  # fmt: skip
+    result = pipeline.run(
+        options, lambda s, p: None, tmp_path / "out", source=source,
+        highlighter=Translating([clip("0:02", "0:12")]),
+    )  # fmt: skip
+    texts = [w.text for w in result.clips[0].words]
+    assert texts[:2] == ["kata0", "lain"] and not any(t.startswith("word") for t in texts)
+    assert "KATA0" in (tmp_path / "out" / "clip-01.ass").read_text()  # karaoke is uppercase
