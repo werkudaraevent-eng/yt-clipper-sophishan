@@ -17,27 +17,25 @@ export default async function Home({
   if (!user) return <Landing />;
   return (
     <AppShell user={user} title={t.nav.home}>
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8">
-        {!supabaseConfigured && (
-          <p className="rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
-            {t.home.previewMode}
-          </p>
-        )}
-        <CreateForm
-          disabled={!supabaseConfigured}
-          credits={credits}
-          initialUrl={url ?? ""}
-          aside={
-            <>
-              <ProjectList recent={4} />
-              <p className="flex gap-3 rounded-lg bg-surface-container-high p-4 text-body-m text-on-surface-variant">
-                <Icon name="info" className="shrink-0" />
-                {t.home.tip}
-              </p>
-            </>
-          }
-        />
-      </div>
+      {!supabaseConfigured && (
+        <p className="rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
+          {t.home.previewMode}
+        </p>
+      )}
+      <CreateForm
+        disabled={!supabaseConfigured}
+        credits={credits}
+        initialUrl={url ?? ""}
+        aside={
+          <>
+            <ProjectList recent={4} />
+            <p className="flex gap-3 rounded-lg bg-surface-container-high p-4 text-body-m text-on-surface-variant">
+              <Icon name="info" className="shrink-0" />
+              {t.home.tip}
+            </p>
+          </>
+        }
+      />
     </AppShell>
   );
 }

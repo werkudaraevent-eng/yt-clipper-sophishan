@@ -114,7 +114,7 @@ export default async function ProjectPage({
   if (running) {
     return (
       <AppShell user={user} title={title} backHref="/projects">
-        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-start gap-6 px-4 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
           <Progress projectId={project.id} projectStatus={status} initial={job ?? null} />
           <aside className="flex flex-col gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
             <a
@@ -163,7 +163,7 @@ export default async function ProjectPage({
 
   return (
     <AppShell user={user} title={t.project.results} backHref="/projects">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8">
+      <>
         <section className="flex flex-col gap-4 rounded-lg bg-surface-container-low p-4 sm:flex-row sm:items-center sm:p-5">
           <a
             href={project.youtube_url}
@@ -235,7 +235,7 @@ export default async function ProjectPage({
                 {sorted.length} {t.projects.clips}
               </span>
             </div>
-            <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+            <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] md:gap-6">
               {sorted.map((c) => {
                 const video = c.video_path ? signed.get(c.video_path) : undefined;
                 const thumb = c.thumbnail_path ? signed.get(c.thumbnail_path) : undefined;
@@ -272,7 +272,7 @@ export default async function ProjectPage({
             </ul>
           </>
         )}
-      </div>
+      </>
     </AppShell>
   );
 }
