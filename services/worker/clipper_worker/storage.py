@@ -42,3 +42,12 @@ class ClipStorage:
         if resp.status_code >= 300:
             raise RuntimeError(f"storage upload failed ({resp.status_code}): {resp.text[:300]}")
         return path
+
+    def delete(self, paths: list[str]) -> None:
+        """Remove objects from the bucket; missing ones are ignored by Supabase."""
+        for i in range(0, len(paths), 1000):
+            resp = self.client.request(
+                "DELETE", self.base, headers=self.headers, json={"prefixes": paths[i : i + 1000]}
+            )
+            if resp.status_code >= 300:
+                raise RuntimeError(f"storage delete failed ({resp.status_code}): {resp.text[:300]}")

@@ -104,6 +104,11 @@ class JobQueue:
                     ),
                 )  # fmt: skip
 
+    def expire_projects(self, batch: int = 100) -> list[str]:
+        """Expire overdue projects; returns the clip file paths to delete."""
+        rows = self.conn.execute("select path from public.expire_projects(%s)", (batch,)).fetchall()
+        return [r["path"] for r in rows]
+
     def give_up(self, job: Job, error: str) -> None:
         """Fail without retrying (the error cannot go away on its own)."""
         self.conn.execute(
