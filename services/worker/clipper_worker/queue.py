@@ -1,11 +1,15 @@
 """Thin wrapper over the job-queue SQL functions in supabase/migrations."""
 
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
+
+if TYPE_CHECKING:
+    from .engine.pipeline import PipelineResult
 
 
 @dataclass(frozen=True)
@@ -48,6 +52,58 @@ class JobQueue:
 
     def succeed(self, job: Job) -> None:
         self.conn.execute("select public.finish_job(%s, %s, true)", (job.id, self.worker_id))
+
+    def save_results(self, job: Job, result: "PipelineResult") -> None:
+        """Store video metadata and clip rows. Replaces clips of earlier attempts.
+
+        File paths are local to the worker until M2 uploads them to storage.
+        """
+        src = result.source
+        with self.conn.transaction():
+            self.conn.execute(
+                """
+                update public.projects
+                   set title = coalesce(%s, title), youtube_id = coalesce(%s, youtube_id),
+                       thumbnail_url = coalesce(%s, thumbnail_url),
+                       duration_seconds = coalesce(%s, duration_seconds),
+                       video_language = coalesce(%s, video_language), updated_at = now()
+                 where id = %s
+                """,
+                (
+                    src.title,
+                    src.video_id,
+                    src.thumbnail,
+                    round(src.duration) if src.duration else None,
+                    src.language,
+                    job.project_id,
+                ),
+            )
+            self.conn.execute("delete from public.clips where project_id = %s", (job.project_id,))
+            for clip in result.clips:
+                h = clip.highlight
+                self.conn.execute(
+                    """
+                    insert into public.clips (project_id, position, start_seconds, end_seconds,
+                        title, hook_text, description, virality_score, reason,
+                        video_path, thumbnail_path, caption_words)
+                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        job.project_id, clip.position, h.start, h.end, h.title, h.hook_text,
+                        h.description, h.virality_score, h.reason, str(clip.video_path),
+                        str(clip.thumbnail_path),
+                        Jsonb([{"text": w.text, "start": w.start, "end": w.end}
+                               for w in clip.words]),
+                    ),
+                )  # fmt: skip
+
+    def give_up(self, job: Job, error: str) -> None:
+        """Fail without retrying (the error cannot go away on its own)."""
+        self.conn.execute(
+            "update public.jobs set attempt = max_attempts where id = %s and locked_by = %s",
+            (job.id, self.worker_id),
+        )
+        self.fail(job, error)
 
     def fail(self, job: Job, error: str) -> None:
         self.conn.execute(

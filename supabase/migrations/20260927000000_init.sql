@@ -204,9 +204,9 @@ create table public.caption_templates (
 );
 
 insert into public.caption_templates (id, name, config, sort_order) values
-  ('karaoke', 'Karaoke', '{"font":"Montserrat ExtraBold","uppercase":true,"primary":"#FFFFFF","highlight":"#22FF22","outline":4}', 1),
+  ('karaoke', 'Karaoke', '{"font":"Montserrat ExtraBold","uppercase":true,"primary":"#FFFFFF","highlight":"#39FF14","outline":4}', 1),
   ('box', 'Box', '{"font":"Montserrat ExtraBold","uppercase":true,"primary":"#FFFFFF","highlightBox":"#E0245E","outline":0}', 2),
-  ('ali', 'Ali', '{"font":"Poppins SemiBold","uppercase":false,"primary":"#111111","background":"#FFFFFF","dimmed":"#9CA3AF"}', 3);
+  ('ali', 'Ali', '{"font":"Montserrat SemiBold","uppercase":false,"primary":"#111111","background":"#FFFFFF","dimmed":"#9CA3AF"}', 3);
 
 -- ---------------------------------------------------------------------------
 -- credit ledger (append-only; profiles.credits_remaining is the cached sum)

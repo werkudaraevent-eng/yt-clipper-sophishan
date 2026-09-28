@@ -6,9 +6,18 @@ requires-python = ">=3.11"
 dependencies = [
   "pydantic>=2.8",
   "psycopg[binary]>=3.2",
+  "anthropic>=1.8",
+  "yt-dlp>=2026.8.19",
+  "numpy>=1.26",
+  # OpenCV 5 moved the Haar cascades out of the wheel; YuNet needs >=4.8.
+  "opencv-python-headless>=4.9,<5",
 ]
 
 [project.optional-dependencies]
+# Whisper transcription for videos without captions.
+asr = [
+  "faster-whisper>=1.1",
+]
 dev = [
   "pytest>=8",
   "ruff>=0.6",
@@ -16,6 +25,7 @@ dev = [
 
 [project.scripts]
 clipper-worker = "clipper_worker.main:main"
+clipper = "clipper_worker.cli:main"
 
 [build-system]
 requires = ["setuptools>=68"]

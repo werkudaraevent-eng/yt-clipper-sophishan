@@ -32,6 +32,11 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/postgres
       CLIPPER_WORKER_ID: worker-1
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      YTDLP_COOKIES_FILE: ${YTDLP_COOKIES_FILE:-}
+      YTDLP_PROXY: ${YTDLP_PROXY:-}
+    volumes:
+      - worker-work:/work
 
   web:
     image: node:22-slim
@@ -44,3 +49,6 @@ services:
       - /repo/node_modules
       - /repo/apps/web/node_modules
       - /repo/packages/shared/node_modules
+
+volumes:
+  worker-work:

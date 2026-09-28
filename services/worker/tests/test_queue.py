@@ -71,11 +71,55 @@ def test_stale_running_job_is_reclaimed(conn, make_project):
     assert job is not None and job.attempt == 2
 
 
-def test_worker_process_runs_dry_pipeline(conn, make_project):
+def fake_run(options, report, work):
+    from pathlib import Path
+
+    from clipper_worker.engine.highlights import Highlight
+    from clipper_worker.engine.pipeline import PipelineResult, RenderedClip, Source
+    from clipper_worker.engine.transcript import Word
+
+    for stage in ("download", "transcribe", "analyze", "render"):
+        report(stage, 0.5)
+    words = [Word("hi", 10.0, 10.5)]
+    source = Source(Path("src.mp4"), 0.0, words, "My Video", "en", "arj7oStGLkU", 600.0, None)
+    h = Highlight(10.0, 40.0, "Title", "Hook", "Desc", 80, "Reason")
+    return PipelineResult(source, [RenderedClip(0, h, Path("c.mp4"), Path("c.jpg"), words)])
+
+
+def test_worker_process_saves_clips_and_metadata(conn, make_project, tmp_path):
     pid = make_project()
     q = JobQueue(conn, "w1")
-    worker_main.process(q, q.claim())
-    assert project_status(conn, pid)["status"] == "ready"
+    worker_main.process(q, q.claim(), run=fake_run, work_root=tmp_path)
+    project = conn.execute(
+        "select status, title, youtube_id, duration_seconds from public.projects where id = %s",
+        (pid,),
+    ).fetchone()
+    assert project == {
+        "status": "ready", "title": "My Video", "youtube_id": "arj7oStGLkU",
+        "duration_seconds": 600,
+    }  # fmt: skip
+    clips = conn.execute(
+        "select position, start_seconds, end_seconds, hook_text, virality_score, caption_words "
+        "from public.clips where project_id = %s",
+        (pid,),
+    ).fetchall()
+    assert clips == [
+        {"position": 0, "start_seconds": 10.0, "end_seconds": 40.0, "hook_text": "Hook",
+         "virality_score": 80.0, "caption_words": [{"text": "hi", "start": 10.0, "end": 10.5}]}
+    ]  # fmt: skip
+
+
+def test_worker_records_pipeline_errors_for_retry(conn, make_project, tmp_path):
+    pid = make_project()
+    q = JobQueue(conn, "w1")
+
+    def broken(options, report, work):
+        raise RuntimeError("download blocked")
+
+    worker_main.process(q, q.claim(), run=broken, work_root=tmp_path)
+    job = conn.execute("select status, error from public.jobs").fetchone()
+    assert job == {"status": "queued", "error": "RuntimeError: download blocked"}
+    assert project_status(conn, pid)["status"] == "processing"
 
 
 def test_worker_fails_invalid_options_without_retry(conn, make_project):

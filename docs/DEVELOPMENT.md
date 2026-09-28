@@ -32,7 +32,39 @@ SQL
 docker compose logs -f worker
 ```
 
-In M0 the pipeline is a dry run that only walks the stages; M1 makes it real.
+The worker downloads the timeframe, picks highlights with Claude (needs
+`ANTHROPIC_API_KEY` in `.env`) and writes the clips to `/work/<project id>/` in the `worker-work` volume.
+Uploading them to Supabase Storage comes with the web app in M2.
+
+## Clip engine CLI
+
+The same pipeline the worker runs, without a database:
+
+```bash
+cd services/worker
+python -m venv .venv && .venv/bin/pip install -e '.[dev,asr]'
+export ANTHROPIC_API_KEY=...            # or pass --offline (density heuristic, dev only)
+.venv/bin/clipper "https://www.youtube.com/watch?v=arj7oStGLkU" --end 600 \
+    --length 30to60 --template karaoke --layout auto --out ./out
+```
+
+Or from a local file plus word timings (`[{"text","start","end"}, ...]`):
+
+```bash
+.venv/bin/clipper --video talk.mp4 --words talk.words.json --language en --end 300 --out ./out
+```
+
+Each run writes `clip-NN.mp4`, `clip-NN.jpg`, the `.ass` caption file and a
+`manifest.json` with titles, hooks, scores and timings.
+
+Pipeline stages (`clipper_worker/engine/`):
+
+| Stage | Module | Notes |
+|---|---|---|
+| download | `youtube.py` | yt-dlp metadata, json3 caption track, section download (H.264 ≤1080p). `YTDLP_COOKIES_FILE` / `YTDLP_PROXY` for servers YouTube blocks |
+| transcribe | `transcript.py` | Word timings from YouTube captions; faster-whisper (`asr` extra, `CLIPPER_WHISPER_MODEL`) when there are none |
+| analyze | `highlights.py` | Claude with structured output (`CLIPPER_LLM_MODEL`, default `claude-opus-5`) and server-side refusal fallback; clips are snapped to word edges and checked for length/overlap |
+| render | `reframe.py`, `captions.py`, `render.py` | One FFmpeg pass: reframe (Auto = YuNet face tracking via `CLIPPER_FACE_MODEL`, Haar fallback), ASS captions + hook title, x264/AAC |
 
 ## Full Supabase stack (auth, storage)
 

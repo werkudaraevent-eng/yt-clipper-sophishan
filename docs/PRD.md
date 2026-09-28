@@ -111,8 +111,8 @@ P0 = MVP, P1 = segera setelah MVP, P2 = nanti.
 | Worker | **Python 3.12** di Docker, dijalankan di VM (Hetzner/Railway/Fly) | FFmpeg & MediaPipe tidak bisa jalan di serverless Vercel |
 | Download | yt-dlp + cookies + proxy residensial | Lihat risiko §9 |
 | Transkrip | 1) subtitle YouTube json3 (timing per kata), 2) fallback **faster-whisper** | Gratis bila subtitle ada; whisper untuk sisanya |
-| LLM | **Claude** (`claude-sonnet-5`) lewat abstraksi provider | Pilih highlight, hook, judul, terjemahan; provider bisa diganti |
-| Reframe | MediaPipe face detection + smoothing, FFmpeg crop | Diadaptasi dari `portrait.py` referensi |
+| LLM | **Claude** (default `claude-opus-5`, bisa diganti lewat `CLIPPER_LLM_MODEL`, misalnya `claude-sonnet-5` untuk menekan biaya) | Pilih highlight, hook, judul, terjemahan |
+| Reframe | Deteksi wajah YuNet (OpenCV) + smoothing, FFmpeg crop | Lebih ringan dari MediaPipe, tanpa dependensi tambahan |
 | Caption | File ASS + libass (FFmpeg), font dibundel (Montserrat, Poppins, dll) | Template = konfigurasi JSON → ASS |
 | Penyimpanan video | Supabase Storage (MVP), antarmuka S3 agar bisa pindah ke Cloudflare R2 | R2 tanpa biaya egress saat trafik besar |
 | Billing | P1: **Stripe** (global) + **Xendit** (QRIS/VA untuk IDR) | |

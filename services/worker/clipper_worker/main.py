@@ -2,37 +2,44 @@
 
 import logging
 import os
+import shutil
 import signal
 import socket
 import time
+from pathlib import Path
 
 from pydantic import ValidationError
 
-from . import pipeline
+from .engine import pipeline
 from .options import JobOptions
 from .queue import Job, JobQueue
 
 log = logging.getLogger("clipper_worker")
 
 POLL_INTERVAL_SECONDS = float(os.environ.get("CLIPPER_POLL_INTERVAL", "3"))
+WORK_ROOT = Path(os.environ.get("CLIPPER_WORK_DIR", "/tmp/clipper"))
 
 
-def process(queue: JobQueue, job: Job) -> None:
+def process(queue: JobQueue, job: Job, run=pipeline.run, work_root: Path = WORK_ROOT) -> None:
     log.info("job %s: attempt %d/%d", job.id, job.attempt, job.max_attempts)
+    work = work_root / str(job.project_id)
     try:
         options = JobOptions.model_validate(job.options)
-        pipeline.run(options, lambda stage, p: queue.progress(job, stage, p))
+        # A retry starts clean so half-written files from the last attempt
+        # cannot end up in the results.
+        shutil.rmtree(work, ignore_errors=True)
+        result = run(options, lambda stage, p: queue.progress(job, stage, p), work)
+        queue.save_results(job, result)
     except ValidationError as exc:
         # Bad options never succeed on retry: fail for good.
-        queue.conn.execute("update public.jobs set attempt = max_attempts where id = %s", (job.id,))
-        queue.fail(job, f"invalid options: {exc.errors(include_url=False)}")
+        queue.give_up(job, f"invalid options: {exc.errors(include_url=False)}")
         log.warning("job %s: invalid options", job.id)
     except Exception as exc:  # noqa: BLE001 - any stage error is recorded on the job
         log.exception("job %s failed", job.id)
         queue.fail(job, f"{type(exc).__name__}: {exc}")
     else:
         queue.succeed(job)
-        log.info("job %s: done", job.id)
+        log.info("job %s: done, %d clips", job.id, len(result.clips))
 
 
 def main() -> None:
