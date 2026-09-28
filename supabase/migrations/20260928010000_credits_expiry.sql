@@ -139,3 +139,13 @@ end;
 $$;
 
 revoke execute on function public.expire_projects(integer) from public, anon, authenticated;
+
+-- Trigger functions are security definer but are not an API. Without this,
+-- PostgREST exposes them under /rest/v1/rpc (the Supabase security advisor
+-- flags it), even though calling one outside a trigger just errors.
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.enqueue_project_job() from public, anon, authenticated;
+revoke execute on function public.mark_project_processing() from public, anon, authenticated;
+revoke execute on function public.charge_project_credits() from public, anon, authenticated;
+revoke execute on function public.record_project_charge() from public, anon, authenticated;
+revoke execute on function public.refund_failed_project() from public, anon, authenticated;
