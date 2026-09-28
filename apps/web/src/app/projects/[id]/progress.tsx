@@ -3,6 +3,9 @@
 import { PIPELINE_STAGES } from "@clipper/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Icon } from "@/components/ui/Icon";
+import { fill } from "@/lib/i18n/dictionaries";
 import { useDictionary } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 
@@ -77,49 +80,122 @@ export function Progress({
   const percent = Math.round((job?.progress ?? 0) * 100);
   const sinceUpdate = job?.locked_at ? now - Date.parse(job.locked_at) : 0;
   const stale = running && sinceUpdate > STALE_MS;
+  const stage = current as keyof typeof t.progress.stages | null;
 
   return (
-    <section className="card flex flex-col gap-3" aria-live="polite">
-      {running && current && (
-        <p className="flex items-baseline justify-between gap-3 font-semibold">
-          <span>{t.progress.stages[current as keyof typeof t.progress.stages] ?? current}</span>
-          <span className="tabular-nums">{percent}%</span>
-        </p>
-      )}
-      <div className="h-2 overflow-hidden rounded bg-outline-variant">
-        <div
-          className={`h-full transition-all ${stale ? "bg-amber-500" : "bg-primary"} ${running ? "animate-pulse" : ""}`}
-          style={{ width: `${Math.max(percent, running ? 2 : 0)}%` }}
-        />
+    <section className="flex flex-col gap-5 rounded-xl bg-surface-container-low p-5 sm:p-6" aria-live="polite">
+      <div className="flex items-center justify-between gap-3">
+        <StatusBadge status={running ? "processing" : "queued"} />
+        {currentIndex >= 0 && (
+          <span className="text-label-l text-on-surface-variant">
+            {fill(t.progress.step, { n: currentIndex + 1, total: PIPELINE_STAGES.length })}
+          </span>
+        )}
       </div>
-      <ol className="flex flex-col gap-1 text-sm">
-        {PIPELINE_STAGES.map((stage, i) => (
-          <li
-            key={stage}
-            className={i < currentIndex ? "text-on-surface-variant line-through" : i === currentIndex ? "font-semibold" : "text-on-surface-variant"}
-          >
-            {i < currentIndex ? "✓" : i === currentIndex ? "…" : "○"} {t.progress.stages[stage]}
-          </li>
-        ))}
-      </ol>
+
+      <div className="flex items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="text-headline-s text-on-surface sm:text-headline-m">
+            {stage ? (t.progress.stages[stage] ?? stage) : t.progress.waiting}
+          </h2>
+          {stage && t.progress.stageHints[stage] && (
+            <p className="mt-1 text-body-m text-on-surface-variant">{t.progress.stageHints[stage]}</p>
+          )}
+        </div>
+        {running && (
+          <span className="shrink-0 text-display-s text-primary tabular-nums">{percent}%</span>
+        )}
+      </div>
+
+      {/* M3 linear progress: active track, gap, remaining track with a stop mark. */}
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={running ? percent : undefined}
+        className="flex h-1 items-center gap-1"
+      >
+        {running ? (
+          <>
+            <div
+              className={`h-full rounded-full transition-all ${stale ? "bg-warning" : "bg-primary"}`}
+              style={{ width: `${Math.max(percent, 2)}%` }}
+            />
+            <div className="relative h-full flex-1 rounded-full bg-secondary-container">
+              <span className="absolute top-0 right-0 h-1 w-1 rounded-full bg-primary" />
+            </div>
+          </>
+        ) : (
+          <div className="relative h-full w-full overflow-hidden rounded-full bg-secondary-container">
+            <div className="absolute inset-y-0 w-1/3 animate-[indeterminate_1.6s_ease-in-out_infinite] rounded-full bg-primary" />
+          </div>
+        )}
+      </div>
+
       {job && running && job.locked_at && (
-        <p className="text-xs text-on-surface-variant tabular-nums">
-          {t.progress.elapsed.replace("{time}", duration(now - Date.parse(job.created_at)))} ·{" "}
-          {t.progress.lastUpdate.replace("{time}", duration(sinceUpdate))}
+        <p className="flex flex-wrap gap-x-5 gap-y-1 text-body-s text-on-surface-variant tabular-nums">
+          <span className="flex items-center gap-1">
+            <Icon name="schedule" size={16} />
+            {fill(t.progress.elapsed, { time: duration(now - Date.parse(job.created_at)) })}
+          </span>
+          <span className="flex items-center gap-1">
+            <Icon name="refresh" size={16} />
+            {fill(t.progress.lastUpdate, { time: duration(sinceUpdate) })}
+          </span>
         </p>
       )}
-      {stale && <p className="text-xs text-amber-700">{t.progress.stale.replace("{time}", duration(sinceUpdate))}</p>}
+      {!running && job && (
+        <p className="flex items-center gap-1 text-body-s text-on-surface-variant tabular-nums">
+          <Icon name="hourglass" size={16} />
+          {fill(t.progress.queuedFor, { time: duration(now - Date.parse(job.created_at)) })}
+        </p>
+      )}
+
+      {stale && (
+        <p role="alert" className="flex gap-2 rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
+          <Icon name="error" size={20} className="shrink-0" />
+          {fill(t.progress.stale, { time: duration(sinceUpdate) })}
+        </p>
+      )}
       {job?.status === "queued" && job.attempt > 0 && (
-        <p className="text-xs text-amber-700">
+        <p className="flex gap-2 rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
+          <Icon name="refresh" size={20} className="shrink-0" />
           {t.progress.retrying} ({job.attempt}/{job.max_attempts}) {t.progress.after} {job.error}
         </p>
       )}
-      {!running && (
-        <p className="text-xs text-on-surface-variant tabular-nums">
-          {t.progress.waiting}
-          {job && ` ${t.progress.queuedFor.replace("{time}", duration(now - Date.parse(job.created_at)))}`}
-        </p>
-      )}
+
+      <ol className="flex flex-col overflow-hidden rounded-md bg-surface-container-lowest py-2">
+        {PIPELINE_STAGES.map((s, i) => {
+          const done = i < currentIndex;
+          const active = i === currentIndex;
+          return (
+            <li
+              key={s}
+              aria-current={active ? "step" : undefined}
+              className={`flex h-12 items-center gap-4 px-4 text-body-l ${
+                active ? "bg-secondary-container text-on-secondary-container" : done ? "text-on-surface" : "text-on-surface-variant"
+              }`}
+            >
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                {done ? (
+                  <Icon name="checkCircle" className="text-primary" />
+                ) : active ? (
+                  <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                ) : (
+                  <span className="h-5 w-5 rounded-full border-2 border-outline" />
+                )}
+              </span>
+              <span className="flex-1">{t.progress.stages[s]}</span>
+              {active && <span className="text-label-l tabular-nums">{percent}%</span>}
+            </li>
+          );
+        })}
+      </ol>
+
+      <p className="flex gap-2 text-body-s text-on-surface-variant">
+        <Icon name="info" size={18} className="shrink-0" />
+        {t.progress.closeNote}
+      </p>
     </section>
   );
 }

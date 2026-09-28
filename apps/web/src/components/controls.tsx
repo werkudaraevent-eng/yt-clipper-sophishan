@@ -146,3 +146,79 @@ export function RangeSlider({
     </div>
   );
 }
+
+/** M3 outlined text field used as a select, with the label resting on the outline. */
+export function SelectField({
+  label,
+  value,
+  onChange,
+  disabled,
+  children,
+  supporting,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  children: React.ReactNode;
+  supporting?: string;
+}) {
+  const id = useId();
+  return (
+    <div>
+      <div className="relative">
+        <select
+          id={id}
+          value={value}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+          className="input h-14 appearance-none pr-10"
+        >
+          {children}
+        </select>
+        <label
+          htmlFor={id}
+          className="pointer-events-none absolute -top-2 left-3 bg-surface-container-lowest px-1 text-body-s text-on-surface-variant"
+        >
+          {label}
+        </label>
+        <Icon
+          name="arrowDropDown"
+          className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-on-surface-variant"
+        />
+      </div>
+      {supporting && <p className="mt-1 px-4 text-body-s text-on-surface-variant">{supporting}</p>}
+    </div>
+  );
+}
+
+/** Single-select row of M3 filter chips. */
+export function ChoiceChips<T extends string>({
+  value,
+  options,
+  onChange,
+  label,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+  label: string;
+}) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-2">
+      <span className="mr-1 text-body-m text-on-surface">{label}</span>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={o.value === value}
+          onClick={() => onChange(o.value)}
+          className="chip"
+        >
+          {o.value === value && <Icon name="check" size={18} />}
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}

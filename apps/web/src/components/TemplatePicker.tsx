@@ -2,6 +2,7 @@
 
 import type { CaptionTemplate } from "@clipper/shared";
 import { useDictionary } from "@/lib/i18n/client";
+import { Icon } from "./ui/Icon";
 
 const PREVIEWS: Record<CaptionTemplate, { name: string; render: () => React.ReactNode }> = {
   karaoke: {
@@ -51,16 +52,18 @@ export function TemplatePicker({
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(key)}
-            className="flex flex-col items-center gap-1"
+            className={`state-layer focus-ring flex flex-col gap-2 rounded-md border-2 p-2 text-left ${
+              selected
+                ? "border-primary bg-secondary-container text-on-secondary-container"
+                : "border-transparent bg-surface-container-high text-on-surface"
+            }`}
           >
-            <span
-              className={`flex aspect-[9/16] w-full items-end justify-center rounded-md bg-gradient-to-b from-slate-600 to-slate-900 pb-[30%] ${
-                selected ? "ring-3 ring-primary" : ""
-              }`}
-            >
+            {/* Fixed dark backdrop: it stands in for video, so it does not follow the theme. */}
+            <span className="flex h-16 w-full items-center justify-center rounded-sm bg-[#1f1d24] px-1 sm:h-20">
               {PREVIEWS[key].render()}
             </span>
-            <span className={`text-xs ${selected ? "font-semibold text-primary" : "text-on-surface-variant"}`}>
+            <span className="flex items-center gap-1 px-1 text-label-l">
+              {selected && <Icon name="checkCircle" size={16} className="shrink-0 text-primary" />}
               {PREVIEWS[key].name}
             </span>
           </button>

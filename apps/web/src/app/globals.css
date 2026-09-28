@@ -318,3 +318,13 @@ body {
     @apply border-transparent bg-secondary-container text-on-secondary-container;
   }
 }
+
+/* Indeterminate linear progress: the active segment sweeps across the track. */
+@keyframes indeterminate {
+  from {
+    left: -33%;
+  }
+  to {
+    left: 100%;
+  }
+}

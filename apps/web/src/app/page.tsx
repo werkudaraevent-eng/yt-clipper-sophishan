@@ -1,48 +1,42 @@
 import { AppShell } from "@/components/AppShell";
 import { ProjectList } from "@/components/ProjectList";
+import { Icon } from "@/components/ui/Icon";
 import { supabaseConfigured } from "@/lib/env";
 import { getDictionary } from "@/lib/i18n/server";
 import { currentCredits, currentUser } from "@/lib/session";
 import { CreateForm } from "./create-form";
+import { Landing } from "./landing";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ url?: string }>;
+}) {
   const user = await currentUser();
-  const [t, credits] = await Promise.all([getDictionary(), currentCredits(user)]);
+  const [t, credits, { url }] = await Promise.all([getDictionary(), currentCredits(user), searchParams]);
+  if (!user) return <Landing />;
   return (
     <AppShell user={user} title={t.nav.home}>
-      <div className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-6 sm:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-8">
         {!supabaseConfigured && (
-          <p className="mx-auto w-full max-w-lg rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
+          <p className="rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
             {t.home.previewMode}
           </p>
         )}
-        <section
-          id="create"
-          className="flex flex-col items-center gap-6 rounded-xl bg-surface-container-low px-4 py-10 text-center sm:px-10"
-        >
-          <div className="flex max-w-2xl flex-col gap-3">
-            <h2 className="text-headline-m text-on-surface sm:text-display-s">{t.home.heroTitle}</h2>
-            <p className="text-body-l text-on-surface-variant">{t.home.heroSubtitle}</p>
-          </div>
-          <div className="w-full max-w-lg text-left">
-            <CreateForm disabled={!supabaseConfigured} credits={credits} />
-          </div>
-        </section>
-        {user ? (
-          <ProjectList recent={4} />
-        ) : (
-          <section className="flex flex-col gap-4">
-            <ul className="grid gap-4 sm:grid-cols-3">
-              {t.home.features.map((f) => (
-                <li key={f.title} className="card">
-                  <h3 className="text-title-m">{f.title}</h3>
-                  <p className="mt-1 text-body-m text-on-surface-variant">{f.body}</p>
-                </li>
-              ))}
-            </ul>
-            <p className="text-center text-body-m text-on-surface-variant">{t.home.freeNote}</p>
-          </section>
-        )}
+        <CreateForm
+          disabled={!supabaseConfigured}
+          credits={credits}
+          initialUrl={url ?? ""}
+          aside={
+            <>
+              <ProjectList recent={4} />
+              <p className="flex gap-3 rounded-lg bg-surface-container-high p-4 text-body-m text-on-surface-variant">
+                <Icon name="info" className="shrink-0" />
+                {t.home.tip}
+              </p>
+            </>
+          }
+        />
       </div>
     </AppShell>
   );
