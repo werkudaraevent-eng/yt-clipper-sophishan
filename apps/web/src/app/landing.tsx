@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { ClipCard, SampleMedia } from "@/components/ClipCard";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -93,8 +94,14 @@ export async function Landing() {
           </div>
         </section>
 
-        <footer className="mx-auto max-w-6xl px-4 py-6 text-body-s text-on-surface-variant sm:px-8">
-          © 2026 Sophishan
+        <footer className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-2 px-4 py-6 text-body-s text-on-surface-variant sm:px-8">
+          <span>© 2026 Sophishan</span>
+          <Link href="/privacy" className="hover:text-on-surface hover:underline">
+            {t.legal.privacy}
+          </Link>
+          <Link href="/terms" className="hover:text-on-surface hover:underline">
+            {t.legal.terms}
+          </Link>
         </footer>
       </main>
     </AppShell>

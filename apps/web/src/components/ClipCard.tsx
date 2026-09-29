@@ -13,6 +13,7 @@ export function ClipCard({
   range,
   downloadHref,
   downloadLabel,
+  actions,
   className = "",
 }: {
   media: React.ReactNode;
@@ -23,6 +24,8 @@ export function ClipCard({
   range: string;
   downloadHref?: string;
   downloadLabel: string;
+  /** Extra buttons under the download, e.g. posting to YouTube. */
+  actions?: React.ReactNode;
   className?: string;
 }) {
   return (
@@ -50,7 +53,7 @@ export function ClipCard({
           <Icon name="schedule" size={14} />
           {range}
         </p>
-        <div className="mt-auto pt-3">
+        <div className="mt-auto flex flex-col gap-2 pt-3">
           {downloadHref ? (
             <a href={downloadHref} className="btn-primary w-full">
               <Icon name="download" size={18} />
@@ -62,6 +65,7 @@ export function ClipCard({
               {downloadLabel}
             </button>
           )}
+          {actions}
         </div>
       </div>
     </article>
