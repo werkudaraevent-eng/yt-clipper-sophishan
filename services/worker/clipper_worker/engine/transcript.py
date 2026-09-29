@@ -111,20 +111,75 @@ def format_clock(seconds: float) -> str:
 
 
 _SENTENCE_END = re.compile(r"[.!?…]$")
+# Silence after a word long enough to count as a breath between phrases.
+PAUSE_SECONDS = 0.45
+
+
+def spoken_end(w: Word) -> float:
+    """When the word's sound likely stops.
+
+    Auto-caption words run until the next word starts, silence included, so
+    their `end` says nothing about pauses. Estimate from the word's length.
+    """
+    return w.start + min(w.end - w.start, 0.2 + 0.07 * len(w.text))
+
+
+def pause_after(words: list[Word], i: int) -> float:
+    if i + 1 >= len(words):
+        return float("inf")
+    return words[i + 1].start - spoken_end(words[i])
+
+
+@dataclass(frozen=True)
+class Line:
+    """Indices of the first and last word of one transcript line."""
+
+    first: int
+    last: int
+
+
+def split_lines(words: list[Word], max_seconds: float = 8.0) -> list[Line]:
+    """Break the transcript where the speaker breaks: sentence ends and pauses.
+
+    Auto captions have no punctuation, so pauses carry most of it. A line that
+    runs past `max_seconds` without either is split at its longest pause.
+    """
+    lines: list[Line] = []
+    first = 0
+    for i, w in enumerate(words):
+        if _SENTENCE_END.search(w.text) or pause_after(words, i) >= PAUSE_SECONDS:
+            lines.append(Line(first, i))
+            first = i + 1
+        elif w.end - words[first].start >= max_seconds:
+            # Longest pause at least two seconds in; ties go to the later word.
+            cands = [j for j in range(first, i) if words[j].end - words[first].start >= 2.0]
+            cut = max(cands or [i], key=lambda j: (pause_after(words, j), j))
+            lines.append(Line(first, cut))
+            first = cut + 1
+    if first < len(words):
+        lines.append(Line(first, len(words) - 1))
+    return lines
 
 
 def to_prompt_lines(words: list[Word], max_seconds: float = 8.0) -> str:
-    """Transcript as `[m:ss] text` lines, split at sentence ends or every ~8s."""
-    lines: list[str] = []
-    buf: list[Word] = []
-    for w in words:
-        buf.append(w)
-        if _SENTENCE_END.search(w.text) or w.end - buf[0].start >= max_seconds:
-            lines.append(f"[{format_clock(buf[0].start)}] " + " ".join(x.text for x in buf))
-            buf = []
-    if buf:
-        lines.append(f"[{format_clock(buf[0].start)}] " + " ".join(x.text for x in buf))
-    return "\n".join(lines)
+    """Transcript as `[m:ss] text` lines, one per phrase (see `split_lines`)."""
+    return "\n".join(
+        f"[{format_clock(words[ln.first].start)}] "
+        + " ".join(w.text for w in words[ln.first : ln.last + 1])
+        for ln in split_lines(words, max_seconds)
+    )
+
+
+def clip_edges(words: list[Word], first: int, last: int) -> tuple[float, float]:
+    """Cut points for words[first..last]: a little air around the speech,
+    never reaching into the neighbouring words."""
+    start = words[first].start - 0.25
+    if first > 0:
+        start = max(start, min(spoken_end(words[first - 1]) + 0.05, words[first].start))
+    end = spoken_end(words[last]) + 0.5
+    if last + 1 < len(words):
+        end = min(end, words[last + 1].start - 0.08)
+    return max(0.0, start), max(end, words[last].start + 0.3)
 
 
 def save_words(words: list[Word], path: Path) -> None:

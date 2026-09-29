@@ -76,18 +76,40 @@ def clip(start, end, **kw):
             "virality_score": 70, "reason": "r", **kw}  # fmt: skip
 
 
-def test_validate_drops_bad_length_overlap_and_out_of_window():
+# Auto-caption style speech: 60 phrases of ten words, 0.4s apart, then about a
+# second of silence. Each word "lasts" until the next starts, as in json3 tracks,
+# and phrases start at x.6s so their [m:ss] markers drop a fraction.
+PHRASES = [
+    [Word(f"p{k}w{j}", 5 * k + 0.6 + 0.4 * j, 5 * k + 0.6 + 0.4 * (j + 1) if j < 9 else 5 * k + 5.6)
+     for j in range(10)]
+    for k in range(60)
+]  # fmt: skip
+SPEECH = [w for p in PHRASES for w in p]
+
+
+def test_prompt_lines_follow_pauses_in_auto_captions():
+    lines = to_prompt_lines(SPEECH).splitlines()
+    assert len(lines) == 60
+    assert lines[2] == "[0:10] " + " ".join(f"p2w{j}" for j in range(10))
+
+
+def test_clips_start_and_end_between_phrases():
     fake = FakeHighlighter([
-        clip("0:10", "0:50.2"),  # ok, ends mid-word -> snapped to 50.4
+        clip("0:10", "0:45"),  # lines 2..9
         clip("0:30", "1:10"),  # overlaps the first
         clip("2:00", "2:10"),  # too short for 30-60
-        clip("4:00", "4:40"),  # ok
+        clip("1:40", "2:45"),  # end read as "the line after" to fit 60s
         clip("nonsense", "1:00"),
     ])  # fmt: skip
     got = highlights.find_highlights(
-        fake, WORDS, title="T", window=(0, 300), length_range=(30, 60), output_language="English"
+        fake, SPEECH, title="T", window=(0, 300), length_range=(30, 60), output_language="English"
     )
-    assert [(c.start, c.end) for c in got] == [(10.0, 50.4), (240.0, 280.0)]
+    for c, (a, b) in zip(got, [(2, 9), (20, 32)], strict=True):
+        first, last = PHRASES[a][0], PHRASES[b][-1]
+        # Opens just before the first word, after the previous phrase stopped...
+        assert PHRASES[a - 1][-1].start + 0.5 < c.start < first.start
+        # ...and closes after the last word, before the next phrase begins.
+        assert last.start + 0.4 < c.end < PHRASES[b + 1][0].start
 
 
 def test_exact_range_from_direction_bypasses_length_rule():
@@ -247,7 +269,8 @@ def test_pipeline_renders_clips_from_local_source(tmp_path, layout):
     expected = (1080, 1080) if layout == "square" else (1080, 1920)
     assert (video_stream["width"], video_stream["height"]) == expected
     assert any(s["codec_type"] == "audio" for s in probe["streams"])
-    assert float(probe["format"]["duration"]) == pytest.approx(12.2, abs=0.3)
+    # Lines [0:08] through [0:16] of the transcript, 8.55s to 24.12s.
+    assert float(probe["format"]["duration"]) == pytest.approx(15.6, abs=0.3)
     assert result.clips[0].thumbnail_path.exists()
     assert stages[0] == "transcribe" and stages[-1] == "render"
     manifest = json.loads((tmp_path / "out" / "manifest.json").read_text())
