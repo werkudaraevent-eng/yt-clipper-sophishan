@@ -22,6 +22,24 @@ WORK_ROOT = Path(os.environ.get("CLIPPER_WORK_DIR", "/tmp/clipper"))
 EXPIRE_INTERVAL_SECONDS = float(os.environ.get("CLIPPER_EXPIRE_INTERVAL", "3600"))
 
 
+def paid_window(options: JobOptions, credits_charged: int) -> JobOptions:
+    """Cut the timeframe down to the minutes that were paid for.
+
+    The charge is computed from the video length the client reported, so a
+    user who under-reports it pays for less than they asked for. The worker
+    knows the real length and processes only what the credits cover.
+    Projects from before credits (charged 0) are left alone.
+    """
+    tf = options.timeframe
+    paid_end = tf.start + credits_charged * 60
+    if credits_charged <= 0 or tf.end <= paid_end:
+        return options
+    log.warning(
+        "timeframe %.0f-%.0fs cut to the %d paid minutes", tf.start, tf.end, credits_charged
+    )
+    return options.model_copy(update={"timeframe": tf.model_copy(update={"end": paid_end})})
+
+
 def process(
     queue: JobQueue,
     job: Job,
@@ -32,7 +50,7 @@ def process(
     log.info("job %s: attempt %d/%d", job.id, job.attempt, job.max_attempts)
     work = work_root / str(job.project_id)
     try:
-        options = JobOptions.model_validate(job.options)
+        options = paid_window(JobOptions.model_validate(job.options), job.credits_charged)
         # A retry starts clean so half-written files from the last attempt
         # cannot end up in the results.
         shutil.rmtree(work, ignore_errors=True)
