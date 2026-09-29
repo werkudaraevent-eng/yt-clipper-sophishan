@@ -9,6 +9,7 @@ import {
   type JobOptionsInput,
   type Layout,
 } from "@clipper/shared";
+import Link from "next/link";
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { ChoiceChips, RangeSlider, Segmented, SelectField, Toggle } from "@/components/controls";
 import { TemplatePicker } from "@/components/TemplatePicker";
@@ -105,6 +106,8 @@ export function CreateForm({
 
   const duration = meta?.duration ?? FALLBACK_DURATION;
   const cost = creditCost(range[0], range[1], meta?.duration);
+  // Credits missing for this video, once its real length is known.
+  const short = meta && credits != null ? Math.max(0, cost - credits) : 0;
   const options: JobOptionsInput = useMemo(
     () => ({
       youtubeUrl: url.trim(),
@@ -199,12 +202,29 @@ export function CreateForm({
               {error}
             </p>
           )}
-          <p className="mt-3 flex items-center justify-center gap-2 text-body-s text-on-surface-variant">
-            <Icon name="tollFill" size={16} className="shrink-0 text-primary" />
-            {credits != null
-              ? fill(t.create.cost, { cost, balance: credits })
-              : fill(t.create.costUnknown, { cost })}
-          </p>
+          {short > 0 && credits != null ? (
+            <div
+              role="alert"
+              className="mt-3 flex flex-col items-start gap-2 rounded-lg bg-error-container px-4 py-3 text-left text-on-error-container sm:mx-auto sm:w-fit sm:flex-row sm:items-center sm:gap-3 sm:py-2 sm:pr-2"
+            >
+              <p className="flex flex-1 items-start gap-2 text-body-m sm:items-center sm:gap-3">
+                <Icon name="error" size={20} className="shrink-0" />
+                <span className="sm:hidden">{fill(t.create.shortCompact, { cost, balance: credits, short })}</span>
+                <span className="hidden sm:inline">{fill(t.create.short, { cost, balance: credits, short })}</span>
+              </p>
+              <Link href="/credits" className="btn-primary shrink-0 pr-6 pl-4">
+                <Icon name="tollFill" size={20} />
+                {t.create.buyCredits}
+              </Link>
+            </div>
+          ) : (
+            <p className="mt-3 flex items-center justify-center gap-2 text-body-s text-on-surface-variant">
+              <Icon name="tollFill" size={16} className="shrink-0 text-primary" />
+              {credits != null
+                ? fill(t.create.cost, { cost, balance: credits })
+                : fill(t.create.costUnknown, { cost })}
+            </p>
+          )}
         </div>
       </section>
 

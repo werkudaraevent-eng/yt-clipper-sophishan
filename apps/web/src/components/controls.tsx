@@ -50,11 +50,14 @@ export function Segmented<T extends string>({
   options,
   onChange,
   label,
+  alwaysCheck = false,
 }: {
   value: T;
   options: { value: T; label: string }[];
   onChange: (value: T) => void;
   label: string;
+  /** Show the selected check on compact windows too (fine with two or three segments). */
+  alwaysCheck?: boolean;
 }) {
   return (
     <div role="group" aria-label={label} className="flex w-full">
@@ -72,7 +75,7 @@ export function Segmented<T extends string>({
               selected ? "bg-secondary-container text-on-secondary-container" : "text-on-surface"
             }`}
           >
-            {selected && <Icon name="check" size={18} className="hidden sm:block" />}
+            {selected && <Icon name="check" size={18} className={alwaysCheck ? undefined : "hidden sm:block"} />}
             {o.label}
           </button>
         );
