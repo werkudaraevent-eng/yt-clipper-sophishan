@@ -50,17 +50,18 @@ export async function Landing() {
             <p className="mt-3 text-body-s text-on-surface-variant">{t.landing.signInNote}</p>
           </form>
 
-          <ul className="mt-6 grid w-full max-w-3xl grid-cols-2 items-end gap-4 sm:grid-cols-3 sm:gap-6">
+          <ul className="mt-6 grid w-full max-w-3xl grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
             {t.landing.samples.map((s, i) => {
-              // The strongest sample sits in the middle, raised.
+              // Same height and top edge for every card; the strongest sample in
+              // the middle stands out through elevation only.
               const featured = i === 1;
               return (
                 <li
                   key={s.title}
-                  className={`text-left ${featured ? "sm:-translate-y-6" : ""} ${i === 2 ? "hidden sm:block" : ""}`}
+                  className={`flex text-left ${i === 2 ? "hidden sm:flex" : ""}`}
                 >
                   <ClipCard
-                    className={featured ? "shadow-elev-3" : "shadow-elev-1"}
+                    className={`w-full ${featured ? "shadow-elev-3" : "shadow-elev-1"}`}
                     media={<SampleMedia gradient={SAMPLE_GRADIENTS[i]} caption={s.caption as [string, string]} />}
                     score={s.score}
                     length={s.duration}
