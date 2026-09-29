@@ -322,7 +322,7 @@ def _as(conn, uid):
 
 def test_admin_can_find_user_and_adjust_credits(conn, make_user):
     admin, user = make_user("admin@example.com"), make_user("buyer@example.com")
-    conn.execute("update public.profiles set is_admin = true where id = %s", (admin,))
+    conn.execute("update public.profiles set role = 'admin' where id = %s", (admin,))
     email = conn.execute("select email from auth.users where id = %s", (user,)).fetchone()["email"]
     _as(conn, admin)
     try:
@@ -355,7 +355,89 @@ def test_non_admins_cannot_use_admin_functions(conn, make_user):
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             conn.execute("select public.admin_adjust_credits(%s, 100, 'me')", (uid,))
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
-            conn.execute("update public.profiles set is_admin = true where id = %s", (uid,))
+            conn.execute("update public.profiles set role = 'admin' where id = %s", (uid,))
     finally:
         conn.execute("reset role")
     assert balance(conn, uid) == 30
+
+
+def _email(conn, uid):
+    return conn.execute("select email from auth.users where id = %s", (uid,)).fetchone()["email"]
+
+
+def test_owner_adds_and_removes_admins(conn, make_user):
+    owner, helper = make_user("owner@example.com"), make_user("helper@example.com")
+    conn.execute("update public.profiles set role = 'owner' where id = %s", (owner,))
+    helper_email = _email(conn, helper)
+    _as(conn, owner)
+    try:
+        assert (
+            conn.execute(
+                "select public.admin_set_role(%s, 'admin') as r", (helper_email.upper(),)
+            ).fetchone()["r"]
+            == "admin"
+        )
+        staff = conn.execute("select id, role from public.admin_list_staff()").fetchall()
+        assert [(r["id"], r["role"]) for r in staff] == [(owner, "owner"), (helper, "admin")]
+        conn.execute("select public.admin_set_role(%s, 'user')", (helper_email,))
+        staff = conn.execute("select id from public.admin_list_staff()").fetchall()
+        assert [r["id"] for r in staff] == [owner]
+        with pytest.raises(psycopg.errors.NoDataFound):
+            conn.execute("select public.admin_set_role('nobody@example.com', 'admin')")
+    finally:
+        conn.execute("reset role")
+
+
+def test_nobody_can_grant_owner_or_touch_an_owner(conn, make_user):
+    owner, other = make_user("owner@example.com"), make_user("other@example.com")
+    conn.execute("update public.profiles set role = 'owner' where id = %s", (owner,))
+    conn.execute("update public.profiles set role = 'owner' where id = %s", (other,))
+    owner_email, other_email = _email(conn, owner), _email(conn, other)
+    _as(conn, owner)
+    try:
+        with pytest.raises(psycopg.errors.InvalidParameterValue):
+            conn.execute("select public.admin_set_role(%s, 'owner')", (other_email,))
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("select public.admin_set_role(%s, 'user')", (owner_email,))
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("select public.admin_set_role(%s, 'user')", (other_email,))
+    finally:
+        conn.execute("reset role")
+
+
+def test_admins_cannot_manage_roles_but_see_recent_users(conn, make_user):
+    admin, user = make_user("admin@example.com"), make_user("new@example.com")
+    conn.execute("update public.profiles set role = 'admin' where id = %s", (admin,))
+    conn.execute(
+        "update public.profiles set created_at = now() - interval '1 day' where id = %s", (admin,)
+    )
+    user_email = _email(conn, user)
+    _as(conn, admin)
+    try:
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("select public.admin_set_role(%s, 'admin')", (user_email,))
+        rows = conn.execute("select * from public.admin_recent_users(10)").fetchall()
+        assert [(r["id"], r["role"], r["projects"]) for r in rows] == [
+            (user, "user", 0),
+            (admin, "admin", 0),
+        ]
+    finally:
+        conn.execute("reset role")
+
+
+def test_users_cannot_read_staff_or_raise_their_own_role(conn, make_user):
+    uid = make_user()
+    _as(conn, uid)
+    try:
+        for sql in (
+            "select * from public.admin_list_staff()",
+            "select * from public.admin_recent_users()",
+            "select public.admin_set_role('x@example.com', 'admin')",
+        ):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                conn.execute(sql)
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            conn.execute("update public.profiles set role = 'owner' where id = %s", (uid,))
+        assert conn.execute("select public.is_admin() as a").fetchone()["a"] is False
+    finally:
+        conn.execute("reset role")
