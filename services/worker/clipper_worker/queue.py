@@ -22,6 +22,8 @@ class Job:
     attempt: int
     max_attempts: int
     options: dict[str, Any]
+    # Credits taken when the project was created: one per minute of timeframe.
+    credits_charged: int = 0
 
 
 class JobQueue:
@@ -36,7 +38,8 @@ class JobQueue:
     def claim(self) -> Job | None:
         row = self.conn.execute(
             """
-            select j.id, j.project_id, p.user_id, j.kind, j.attempt, j.max_attempts, p.options
+            select j.id, j.project_id, p.user_id, j.kind, j.attempt, j.max_attempts, p.options,
+                   p.credits_charged
               from public.claim_job(%s) j
               join public.projects p on p.id = j.project_id
             """,

@@ -122,6 +122,29 @@ def test_worker_records_pipeline_errors_for_retry(conn, make_project, tmp_path):
     assert project_status(conn, pid)["status"] == "processing"
 
 
+def test_worker_only_processes_the_minutes_that_were_paid_for(conn, make_user, tmp_path):
+    # The client reports the video length, and the charge trusts it. A user who
+    # claims a one-minute video but asks for the first hour pays 1 credit; the
+    # worker must then cut only that minute, not the hour.
+    uid = make_user()
+    url = "https://youtu.be/arj7oStGLkU"
+    options = {"youtubeUrl": url, "timeframe": {"start": 30, "end": 3600}}
+    conn.execute(
+        "insert into public.projects (user_id, youtube_url, duration_seconds, options) "
+        "values (%s, %s, 60, %s)",
+        (uid, url, psycopg.types.json.Jsonb(options)),
+    )
+    seen = []
+
+    def spy(options, report, work):
+        seen.append((options.timeframe.start, options.timeframe.end))
+        return fake_run(options, report, work)
+
+    q = JobQueue(conn, "w1")
+    worker_main.process(q, q.claim(), run=spy, work_root=tmp_path)
+    assert seen == [(30, 90)]
+
+
 def test_worker_fails_invalid_options_without_retry(conn, make_project):
     pid = make_project(options={"youtubeUrl": "https://vimeo.com/1", "timeframe": {}})
     q = JobQueue(conn, "w1")
