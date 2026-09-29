@@ -1,6 +1,6 @@
 import type { Locale } from "@/lib/i18n/dictionaries";
 
-/** A legal page: sections of paragraphs. `{contact}` becomes the support email. */
+/** A legal page: sections of paragraphs. `{contact}` becomes the support email, `[text](url)` a link. */
 export type LegalDoc = { title: string; updated: string; sections: { heading: string; body: string[] }[] };
 
 const YT_TERMS = "https://www.youtube.com/t/terms";
@@ -39,18 +39,10 @@ const privacyEn: LegalDoc = {
     {
       heading: "YouTube and Google data",
       body: [
-        "Posting to YouTube uses the YouTube API Services. By connecting your channel you also agree to the YouTube Terms of Service (" +
-          YT_TERMS +
-          "), and Google's Privacy Policy (" +
-          GOOGLE_PRIVACY +
-          ") applies to the data Google handles.",
+        `Posting to YouTube uses the YouTube API Services. By connecting your channel you also agree to the [YouTube Terms of Service](${YT_TERMS}), and the [Google Privacy Policy](${GOOGLE_PRIVACY}) applies to the data Google handles.`,
         "We ask only for permission to upload videos and to see the email address of the account. We cannot read, edit or delete your existing videos.",
-        "Our use of information received from Google APIs adheres to the Google API Services User Data Policy (" +
-          GOOGLE_LIMITED_USE +
-          "), including the Limited Use requirements.",
-        "You can disconnect YouTube at any time from a project page, which deletes the stored token, or revoke access from your Google account at " +
-          GOOGLE_PERMISSIONS +
-          ".",
+        `Our use of information received from Google APIs adheres to the [Google API Services User Data Policy](${GOOGLE_LIMITED_USE}), including the Limited Use requirements.`,
+        `You can disconnect YouTube at any time from a project page, which deletes the stored token, or revoke access in your [Google account permissions](${GOOGLE_PERMISSIONS}).`,
       ],
     },
     {
@@ -105,18 +97,10 @@ const privacyId: LegalDoc = {
     {
       heading: "Data YouTube dan Google",
       body: [
-        "Posting ke YouTube memakai YouTube API Services. Dengan menghubungkan channel, kamu juga menyetujui Persyaratan Layanan YouTube (" +
-          YT_TERMS +
-          "), dan Kebijakan Privasi Google (" +
-          GOOGLE_PRIVACY +
-          ") berlaku untuk data yang ditangani Google.",
+        `Posting ke YouTube memakai YouTube API Services. Dengan menghubungkan channel, kamu juga menyetujui [Persyaratan Layanan YouTube](${YT_TERMS}), dan [Kebijakan Privasi Google](${GOOGLE_PRIVACY}) berlaku untuk data yang ditangani Google.`,
         "Kami hanya meminta izin untuk mengunggah video dan melihat alamat email akun tersebut. Kami tidak bisa membaca, mengubah, atau menghapus video yang sudah ada.",
-        "Penggunaan informasi yang kami terima dari Google API mengikuti Google API Services User Data Policy (" +
-          GOOGLE_LIMITED_USE +
-          "), termasuk ketentuan Limited Use.",
-        "Kamu bisa memutus YouTube kapan saja dari halaman proyek, yang menghapus token tersimpan, atau mencabut akses dari akun Google-mu di " +
-          GOOGLE_PERMISSIONS +
-          ".",
+        `Penggunaan informasi yang kami terima dari Google API mengikuti [Google API Services User Data Policy](${GOOGLE_LIMITED_USE}), termasuk ketentuan Limited Use.`,
+        `Kamu bisa memutus YouTube kapan saja dari halaman proyek, yang menghapus token tersimpan, atau mencabut akses lewat [izin akun Google](${GOOGLE_PERMISSIONS}).`,
       ],
     },
     {
@@ -155,9 +139,7 @@ const termsEn: LegalDoc = {
     {
       heading: "Your content",
       body: [
-        "Only submit videos you own or have permission to use. You are responsible for the clips you publish and for following the rules of the platforms you post to, including the YouTube Terms of Service (" +
-          YT_TERMS +
-          ").",
+        `Only submit videos you own or have permission to use. You are responsible for the clips you publish and for following the rules of the platforms you post to, including the [YouTube Terms of Service](${YT_TERMS}).`,
         "We do not claim ownership of your videos or clips.",
       ],
     },
@@ -201,9 +183,7 @@ const termsId: LegalDoc = {
     {
       heading: "Kontenmu",
       body: [
-        "Kirim hanya video milikmu atau yang sudah kamu dapatkan izinnya. Kamu bertanggung jawab atas klip yang kamu publikasikan dan wajib mengikuti aturan platform tujuan, termasuk Persyaratan Layanan YouTube (" +
-          YT_TERMS +
-          ").",
+        `Kirim hanya video milikmu atau yang sudah kamu dapatkan izinnya. Kamu bertanggung jawab atas klip yang kamu publikasikan dan wajib mengikuti aturan platform tujuan, termasuk [Persyaratan Layanan YouTube](${YT_TERMS}).`,
         "Kami tidak mengklaim kepemilikan atas video atau klipmu.",
       ],
     },
