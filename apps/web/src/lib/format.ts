@@ -8,19 +8,50 @@ export function clock(seconds: number): string {
   return `${String(h).padStart(2, "0")}:${mm}:${ss}`;
 }
 
-/** "Today", "Yesterday", or a short date like "24 Sep" (with the year when it differs). */
+/** Most users are in Indonesia and pages render on a UTC server, so times use WIB. */
+export const TIME_ZONE = "Asia/Jakarta";
+
+/** Calendar day in WIB as a UTC midnight timestamp, for day differences. */
+function wibDay(d: Date): number {
+  const [y, m, day] = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE }).format(d).split("-").map(Number);
+  return Date.UTC(y, m - 1, day);
+}
+
+/** "Today", "Yesterday", or a short date like "24 Sep" (with the year when it differs), in WIB. */
 export function shortDate(iso: string, locale: string, now = new Date()): string {
   const date = new Date(iso);
-  const day = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
-  const days = Math.round((day(now) - day(date)) / 86_400_000);
+  const days = Math.round((wibDay(now) - wibDay(date)) / 86_400_000);
   const tag = locale === "id" ? "id-ID" : "en-US";
   if (days === 0 || days === 1) {
     const text = new Intl.RelativeTimeFormat(tag, { numeric: "auto" }).format(-days, "day");
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
+  const year = (d: Date) => new Date(wibDay(d)).getUTCFullYear();
   return new Intl.DateTimeFormat(tag, {
     day: "numeric",
     month: "short",
-    ...(date.getFullYear() !== now.getFullYear() && { year: "numeric" }),
+    timeZone: TIME_ZONE,
+    ...(year(date) !== year(now) && { year: "numeric" }),
   }).format(date);
+}
+
+/** "09:15" in WIB (id-ID would print "09.15"). */
+export function hhmm(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: TIME_ZONE,
+  }).formatToParts(new Date(iso));
+  return `${parts.find((p) => p.type === "hour")?.value}:${parts.find((p) => p.type === "minute")?.value}`;
+}
+
+/** "29 Sep, 14:47" in WIB. */
+export function dayAndTime(iso: string, locale: string): string {
+  const day = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", {
+    day: "numeric",
+    month: "short",
+    timeZone: TIME_ZONE,
+  }).format(new Date(iso));
+  return `${day}, ${hhmm(iso)}`;
 }
