@@ -6,6 +6,7 @@ export const LOCALE_COOKIE = "lang";
 const en = {
   meta: { description: "Turn long YouTube videos into captioned 9:16 shorts." },
   header: { signIn: "Sign in", signOut: "Sign out", language: "Language", credits: "credits" },
+  legal: { privacy: "Privacy Policy", terms: "Terms of Service", agree: "By continuing you agree to the", and: "and the" },
   nav: {
     home: "Home",
     projects: "Projects",
@@ -164,6 +165,37 @@ const en = {
     creditsUsed: "{n} credits used",
     openVideo: "Open on YouTube",
   },
+  youtube: {
+    connectTitle: "Post straight to YouTube Shorts",
+    connectBody: "Connect your channel once, then post any clip with one tap.",
+    connect: "Connect YouTube",
+    connectedAs: "Posting to YouTube as {name}",
+    disconnect: "Disconnect",
+    post: "Post to YouTube",
+    posted: "Posted",
+    view: "View on YouTube",
+    dialogTitle: "Post to YouTube Shorts",
+    title: "Title",
+    description: "Description",
+    privacy: "Who can watch",
+    privacies: { public: "Public", unlisted: "Unlisted", private: "Private" },
+    choosePrivacy: "Choose one",
+    cancel: "Cancel",
+    submit: "Post",
+    uploading: "Uploading to YouTube…",
+    uploadingHint: "Keep this page open. A Short usually takes under a minute.",
+    results: {
+      connected: "YouTube connected. You can now post clips.",
+      denied: "YouTube was not connected because access was declined.",
+      scope: "Please tick the permission to upload videos, then connect again.",
+      error: "Could not connect YouTube. Please try again.",
+    },
+    errors: {
+      reconnect: "YouTube access expired. Connect YouTube again, then retry.",
+      quota: "YouTube's daily upload limit was reached. Try again tomorrow.",
+      failed: "Upload failed. Please try again.",
+    },
+  },
   progress: {
     stages: {
       download: "Downloading video",
@@ -242,6 +274,7 @@ export type Dictionary = typeof en;
 const id: Dictionary = {
   meta: { description: "Ubah video YouTube panjang jadi shorts 9:16 lengkap dengan caption." },
   header: { signIn: "Masuk", signOut: "Keluar", language: "Bahasa", credits: "kredit" },
+  legal: { privacy: "Kebijakan Privasi", terms: "Syarat Layanan", agree: "Dengan melanjutkan, kamu menyetujui", and: "dan" },
   nav: {
     home: "Beranda",
     projects: "Proyek",
@@ -400,6 +433,37 @@ const id: Dictionary = {
     settings: "Pengaturan",
     creditsUsed: "{n} kredit dipakai",
     openVideo: "Buka di YouTube",
+  },
+  youtube: {
+    connectTitle: "Posting langsung ke YouTube Shorts",
+    connectBody: "Hubungkan channel-mu sekali, lalu posting klip mana pun dengan satu tombol.",
+    connect: "Hubungkan YouTube",
+    connectedAs: "Posting ke YouTube sebagai {name}",
+    disconnect: "Putuskan",
+    post: "Post ke YouTube",
+    posted: "Sudah diposting",
+    view: "Lihat di YouTube",
+    dialogTitle: "Post ke YouTube Shorts",
+    title: "Judul",
+    description: "Deskripsi",
+    privacy: "Siapa yang bisa menonton",
+    privacies: { public: "Publik", unlisted: "Tidak publik", private: "Pribadi" },
+    choosePrivacy: "Pilih salah satu",
+    cancel: "Batal",
+    submit: "Post",
+    uploading: "Mengunggah ke YouTube…",
+    uploadingHint: "Biarkan halaman ini terbuka. Biasanya kurang dari satu menit.",
+    results: {
+      connected: "YouTube terhubung. Sekarang kamu bisa posting klip.",
+      denied: "YouTube tidak terhubung karena akses ditolak.",
+      scope: "Centang izin untuk mengunggah video, lalu hubungkan lagi.",
+      error: "YouTube gagal dihubungkan. Coba lagi.",
+    },
+    errors: {
+      reconnect: "Akses YouTube sudah kedaluwarsa. Hubungkan YouTube lagi, lalu coba ulang.",
+      quota: "Batas upload harian YouTube sudah tercapai. Coba lagi besok.",
+      failed: "Upload gagal. Coba lagi.",
+    },
   },
   progress: {
     stages: {

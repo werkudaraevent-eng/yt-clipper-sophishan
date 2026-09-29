@@ -119,6 +119,17 @@ export default async function LoginPage({
               {t.login.emailLink}
             </button>
           </form>
+          <p className="text-center text-body-s text-on-surface-variant">
+            {t.legal.agree}{" "}
+            <Link href="/terms" className="text-primary underline">
+              {t.legal.terms}
+            </Link>{" "}
+            {t.legal.and}{" "}
+            <Link href="/privacy" className="text-primary underline">
+              {t.legal.privacy}
+            </Link>
+            .
+          </p>
         </div>
       </section>
     </main>

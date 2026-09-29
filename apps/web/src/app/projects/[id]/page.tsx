@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { JobOptions, ProjectStatus } from "@clipper/shared";
 import { AppShell } from "@/components/AppShell";
 import { ClipCard } from "@/components/ClipCard";
+import { PostToYouTube } from "@/components/PostToYouTube";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { clock } from "@/lib/format";
@@ -12,6 +13,8 @@ import { LANGUAGES } from "@/lib/languages";
 import { currentUser } from "@/lib/session";
 import { CLIPS_BUCKET } from "@/lib/storage";
 import { createClient } from "@/lib/supabase/server";
+import { disconnectYouTube } from "@/lib/youtube-actions";
+import { youtubePostingEnabled } from "@/lib/youtube-upload";
 import { Progress } from "./progress";
 
 const SIGNED_URL_SECONDS = 60 * 60;
@@ -53,9 +56,9 @@ export default async function ProjectPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ sort?: string }>;
+  searchParams: Promise<{ sort?: string; youtube?: string }>;
 }) {
-  const [{ id }, { sort: sortParam }] = await Promise.all([params, searchParams]);
+  const [{ id }, { sort: sortParam, youtube: youtubeResult }] = await Promise.all([params, searchParams]);
   const sort: Sort = (SORTS as readonly string[]).includes(sortParam ?? "") ? (sortParam as Sort) : "score";
   const user = await currentUser();
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
@@ -155,6 +158,35 @@ export default async function ProjectPage({
   }
 
   const sorted = sortClips(clips ?? [], sort);
+
+  // YouTube posting: the connected channel, and the latest published post per clip.
+  let youtube: { google_email: string | null; channel_title: string | null } | null = null;
+  const postedUrls = new Map<string, string>();
+  if (youtubePostingEnabled && sorted.length) {
+    const [{ data: connection }, { data: posts }] = await Promise.all([
+      supabase.from("youtube_connections").select("google_email, channel_title").maybeSingle(),
+      supabase
+        .from("clip_posts")
+        .select("clip_id, external_id")
+        .in(
+          "clip_id",
+          sorted.map((c) => c.id),
+        )
+        .eq("status", "published")
+        .order("created_at", { ascending: false }),
+    ]);
+    youtube = connection;
+    for (const p of posts ?? []) {
+      if (p.external_id && !postedUrls.has(p.clip_id)) {
+        postedUrls.set(p.clip_id, `https://youtube.com/shorts/${p.external_id}`);
+      }
+    }
+  }
+  const youtubeMessage =
+    youtubeResult && youtubeResult in t.youtube.results
+      ? t.youtube.results[youtubeResult as keyof typeof t.youtube.results]
+      : null;
+  const projectPath = `/projects/${project.id}`;
   const meta = [
     `${clock(options.timeframe.start)} – ${clock(options.timeframe.end)}`,
     `${clips?.length ?? 0} ${t.projects.clips}`,
@@ -214,6 +246,53 @@ export default async function ProjectPage({
           </p>
         )}
 
+        {youtubeMessage && (
+          <p
+            role="status"
+            className={`flex gap-2 rounded-md p-3 text-body-m ${
+              youtubeResult === "connected"
+                ? "bg-success-container text-on-success-container"
+                : "bg-error-container text-on-error-container"
+            }`}
+          >
+            <Icon name={youtubeResult === "connected" ? "checkCircle" : "error"} size={20} className="shrink-0" />
+            {youtubeMessage}
+          </p>
+        )}
+
+        {youtubePostingEnabled && sorted.length > 0 && status === "ready" && (
+          <section className="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-lowest p-4 sm:flex-row sm:items-center">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary-container text-on-secondary-container">
+              <Icon name="share" size={20} />
+            </span>
+            {youtube ? (
+              <>
+                <p className="min-w-0 flex-1 truncate text-body-l text-on-surface">
+                  {fill(t.youtube.connectedAs, {
+                    name: youtube.channel_title ?? youtube.google_email ?? "YouTube",
+                  })}
+                </p>
+                <form action={disconnectYouTube}>
+                  <input type="hidden" name="path" value={projectPath} />
+                  <button className="state-layer focus-ring inline-flex h-10 items-center rounded-full px-3 text-label-l text-primary">
+                    {t.youtube.disconnect}
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="min-w-0 flex-1">
+                  <p className="text-title-s text-on-surface">{t.youtube.connectTitle}</p>
+                  <p className="text-body-s text-on-surface-variant">{t.youtube.connectBody}</p>
+                </div>
+                <a href={`/api/youtube/connect?next=${encodeURIComponent(projectPath)}`} className="btn-primary">
+                  {t.youtube.connect}
+                </a>
+              </>
+            )}
+          </section>
+        )}
+
         {sorted.length > 0 && (
           <>
             <div className="flex flex-wrap items-center gap-2">
@@ -265,6 +344,17 @@ export default async function ProjectPage({
                       range={`${clock(c.start_seconds)} – ${clock(c.end_seconds)}`}
                       downloadHref={video ? `${video}&download=clip-${c.position + 1}.mp4` : undefined}
                       downloadLabel={t.project.download}
+                      actions={
+                        youtube && video ? (
+                          <PostToYouTube
+                            clipId={c.id}
+                            defaultTitle={`${c.title ?? `${t.project.clip} ${c.position + 1}`} #Shorts`.slice(0, 100)}
+                            defaultDescription={c.description ?? c.hook_text ?? ""}
+                            postedUrl={postedUrls.get(c.id)}
+                            labels={t.youtube}
+                          />
+                        ) : undefined
+                      }
                     />
                   </li>
                 );
