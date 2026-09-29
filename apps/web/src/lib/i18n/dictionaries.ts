@@ -194,6 +194,7 @@ const en = {
       reconnect: "YouTube access expired. Connect YouTube again, then retry.",
       quota: "YouTube's daily upload limit was reached. Try again tomorrow.",
       failed: "Upload failed. Please try again.",
+      busy: "This clip is already uploading. Wait for it to finish.",
     },
   },
   progress: {
@@ -463,6 +464,7 @@ const id: Dictionary = {
       reconnect: "Akses YouTube sudah kedaluwarsa. Hubungkan YouTube lagi, lalu coba ulang.",
       quota: "Batas upload harian YouTube sudah tercapai. Coba lagi besok.",
       failed: "Upload gagal. Coba lagi.",
+      busy: "Klip ini sedang di-upload. Tunggu sampai selesai.",
     },
   },
   progress: {

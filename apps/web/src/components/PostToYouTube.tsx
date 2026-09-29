@@ -27,10 +27,19 @@ export function PostToYouTube({
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [state, setState] = useState<State>(postedUrl ? { kind: "done", url: postedUrl } : { kind: "idle" });
+  // Blocks a second submit before React has re-rendered the disabled button.
+  const sending = useRef(false);
   const outlinedLabel =
     "pointer-events-none absolute -top-2 left-3 bg-surface-container-high px-1 text-body-s text-on-surface-variant";
 
-  async function submit(form: FormData) {
+  // A plain submit handler rather than a form action: inside an action React
+  // holds the "uploading" state until the upload returns, so the button stayed
+  // clickable and a second click posted the clip twice.
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (sending.current) return;
+    sending.current = true;
+    const form = new FormData(e.currentTarget);
     setState({ kind: "uploading" });
     try {
       const res = await fetch("/api/youtube/upload", {
@@ -54,6 +63,8 @@ export function PostToYouTube({
       if (code === "reconnect") window.location.reload();
     } catch {
       setState({ kind: "error", message: labels.errors.failed });
+    } finally {
+      sending.current = false;
     }
   }
 
@@ -78,7 +89,7 @@ export function PostToYouTube({
         onCancel={(e) => busy && e.preventDefault()}
         className="m-auto w-[min(560px,calc(100vw-32px))] rounded-xl bg-surface-container-high p-6 text-on-surface shadow-elev-3 backdrop:bg-black/40"
       >
-        <form action={submit} className="flex flex-col gap-5">
+        <form onSubmit={submit} className="flex flex-col gap-5">
           <h2 className="text-headline-s">{labels.dialogTitle}</h2>
           <div className="relative">
             <input
