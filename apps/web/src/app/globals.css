@@ -256,6 +256,14 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Selects have a transparent fill, so the browser draws their open list on its
+   own default (white) while the options inherit our light-on-dark text. Give
+   the options theme colours so the list reads in both themes. */
+select option {
+  background-color: var(--md-surface-container-high);
+  color: var(--md-on-surface);
+}
+
 /*
  * M3 state layer: an overlay in the content color. Hover 8%, focus 10%,
  * pressed 10%. Disabled elements drop it (content 38%, container 12%).
