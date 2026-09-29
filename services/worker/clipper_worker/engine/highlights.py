@@ -15,7 +15,15 @@ from typing import Protocol, TypeVar
 
 from pydantic import BaseModel, Field, ValidationError
 
-from .transcript import Word, format_clock, slice_words, to_prompt_lines
+from .transcript import (
+    Line,
+    Word,
+    clip_edges,
+    format_clock,
+    slice_words,
+    split_lines,
+    to_prompt_lines,
+)
 
 DEFAULT_MODEL = "claude-opus-5"
 MAX_DIRECTION_CHARS = 1000
@@ -77,9 +85,12 @@ never mid-sentence. Read the whole transcript before choosing and spread picks \
 across it rather than taking consecutive chunks from the opening minutes. Clips \
 must never overlap.
 
-Timestamps: copy start and end from the transcript's own [m:ss] markers (the end \
-may be the marker of the line after the clip's last line). Measure duration from \
-those timestamps, not from how much text a segment has.
+Timestamps: each transcript line is one spoken phrase, broken where the speaker \
+pauses. start is the [m:ss] marker of the clip's first line and end is the marker \
+of its last line, copied exactly; the clip then runs to the end of that last line. \
+Pick a first line that opens a thought and a last line that closes one, so the \
+clip never starts or stops mid-sentence. Measure duration from the markers (up to \
+the marker of the line after the last one), not from how much text a line has.
 
 virality_score: 80-100 for strongly emotional, controversial or very funny \
 moments; 50-79 for interesting insights and decent stories; below 50 for ordinary \
@@ -179,6 +190,7 @@ def validate(
 ) -> list[Highlight]:
     """Turn model output into clips we can cut: parsed, snapped, checked."""
     exact = requested_ranges(direction)
+    lines = split_lines(words)
     lo, hi = window
     out: list[Highlight] = []
     for clip in proposed.clips:
@@ -194,15 +206,15 @@ def validate(
             abs(start - a) <= RANGE_TOLERANCE_SECONDS and abs(end - b) <= RANGE_TOLERANCE_SECONDS
             for a, b in exact
         )
-        if not is_requested:
+        if is_requested:
+            # The user's own range, kept as typed; only whole words.
             start, end = _snap(words, start, end)
             start, end = max(lo, start), min(hi, end)
-            if length_range and not (
-                length_range[0] - LENGTH_TOLERANCE_SECONDS
-                <= end - start
-                <= length_range[1] + LENGTH_TOLERANCE_SECONDS
-            ):
+        else:
+            edges = _line_edges(words, lines, start, end, length_range)
+            if edges is None:
                 continue
+            start, end = max(lo, edges[0]), min(hi, edges[1])
         if any(start < h.end and h.start < end for h in out):
             continue
         out.append(
@@ -217,6 +229,41 @@ def validate(
             )
         )
     return out
+
+
+def _nearest_line(words: list[Word], lines: list[Line], t: float) -> int:
+    """The line whose [m:ss] marker is closest to `t` (markers drop the fraction)."""
+    return min(range(len(lines)), key=lambda i: abs(math.floor(words[lines[i].first].start) - t))
+
+
+def _line_edges(
+    words: list[Word],
+    lines: list[Line],
+    start: float,
+    end: float,
+    length_range: tuple[float, float] | None,
+) -> tuple[float, float] | None:
+    """Cut points on whole transcript lines, so clips start and stop between phrases.
+
+    `end` is read as the marker of the clip's last line; models sometimes give
+    the marker of the line after it instead, so that reading is tried when the
+    first one misses the length.
+    """
+    if not lines:
+        return None
+    a = _nearest_line(words, lines, start)
+    b = _nearest_line(words, lines, end)
+    for last in (b, b - 1):
+        if last < a:
+            continue
+        s, e = clip_edges(words, lines[a].first, lines[last].last)
+        if length_range is None or (
+            length_range[0] - LENGTH_TOLERANCE_SECONDS
+            <= e - s
+            <= length_range[1] + LENGTH_TOLERANCE_SECONDS
+        ):
+            return s, e
+    return None
 
 
 def _snap(words: list[Word], start: float, end: float) -> tuple[float, float]:
@@ -392,7 +439,8 @@ class DensityHighlighter:
                 break
         picks: list[float] = []
         for _count, t in sorted(scored, reverse=True):
-            if all(abs(t - p) >= self.length for p in picks):
+            # Clips grow to whole lines when validated; leave room for that.
+            if all(abs(t - p) >= self.length + 10 for p in picks):
                 picks.append(t)
             if len(picks) == num:
                 break
