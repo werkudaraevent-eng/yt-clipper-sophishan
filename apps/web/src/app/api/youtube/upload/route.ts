@@ -41,12 +41,44 @@ export async function POST(request: Request) {
   const { data: sealed } = await supabase.rpc("youtube_refresh_token");
   if (!sealed) return Response.json({ code: "reconnect" }, { status: 409 });
 
+  // Each clip goes up once: a repeat request gets the Short that already exists.
+  const { data: published } = await supabase
+    .from("clip_posts")
+    .select("external_id")
+    .eq("clip_id", clip.id)
+    .eq("status", "published")
+    .not("external_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+  if (published?.external_id) {
+    return Response.json({ id: published.external_id, url: `https://youtube.com/shorts/${published.external_id}` });
+  }
+
   const { data: post, error: postError } = await supabase
     .from("clip_posts")
     .insert({ clip_id: clip.id, user_id: user.id, privacy })
-    .select("id")
+    .select("id, created_at")
     .single();
   if (postError || !post) return Response.json({ code: "failed" }, { status: 500 });
+
+  // Two requests that got past the check above both inserted a row; only the
+  // earliest one uploads. Rows older than the upload time limit are stale.
+  const { data: uploading } = await supabase
+    .from("clip_posts")
+    .select("id, created_at")
+    .eq("clip_id", clip.id)
+    .eq("status", "uploading")
+    .gte("created_at", new Date(Date.now() - maxDuration * 1000).toISOString());
+  const first = (uploading ?? []).sort(
+    (a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id),
+  )[0];
+  if (first && first.id !== post.id) {
+    await supabase
+      .from("clip_posts")
+      .update({ status: "failed", error: "duplicate request", updated_at: new Date().toISOString() })
+      .eq("id", post.id);
+    return Response.json({ code: "busy" }, { status: 409 });
+  }
 
   const finish = (fields: { status: string; external_id?: string; error?: string }) =>
     supabase
