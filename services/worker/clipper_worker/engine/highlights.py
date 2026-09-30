@@ -90,7 +90,8 @@ with no emotion. Each clip has to make sense to someone who has not seen the res
 of the video, so start at the beginning of a thought and end after its payoff, \
 never mid-sentence. Of the lines that open the thought, pick the one where the \
 stakes appear soonest, not a slow lead-in such as reading out a listener's \
-question or a stammered false start. Read the whole transcript before choosing \
+question, the host's reaction ("oh oke", "iya", "unik") or a stammered false \
+start. Read the whole transcript before choosing \
 and spread picks across it rather than taking consecutive chunks from the opening \
 minutes. Clips must never overlap.
 
