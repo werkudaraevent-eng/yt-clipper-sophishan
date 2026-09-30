@@ -5,7 +5,7 @@ import logging
 import os
 import time
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 from ..options import JobOptions
@@ -186,6 +186,9 @@ def run(
         direction=options.ai_direction,
         log=log.info,
     )
+
+    if not options.cold_open:
+        highlights = [replace(h, teaser=None) for h in highlights]
 
     settings = RenderSettings(
         layout=options.layout,

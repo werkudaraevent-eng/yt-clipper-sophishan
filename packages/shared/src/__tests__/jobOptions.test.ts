@@ -22,5 +22,7 @@ describe("jobOptionsSchema", () => {
       wordsPerCaption: 3,
     });
     expect(parsed.layout).toBe("auto");
+    expect(parsed.hookTitle).toBe(true);
+    expect(parsed.coldOpen).toBe(true);
   });
 });

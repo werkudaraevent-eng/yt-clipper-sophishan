@@ -95,8 +95,11 @@ def _wrap(text: str, max_chars: int) -> str:
     return r"\N".join(lines)
 
 
-def chunk_words(words: list[Word], per_caption: int, max_gap: float = 0.8) -> list[list[Word]]:
-    """Group words into caption lines, breaking early on pauses and sentence ends."""
+def chunk_words(
+    words: list[Word], per_caption: int, max_gap: float = 0.8, cuts: tuple[float, ...] = ()
+) -> list[list[Word]]:
+    """Group words into caption lines, breaking early on pauses, sentence ends
+    and `cuts` (times where the picture jumps, such as the end of a cold open)."""
     chunks: list[list[Word]] = []
     current: list[Word] = []
     for w in words:
@@ -104,6 +107,7 @@ def chunk_words(words: list[Word], per_caption: int, max_gap: float = 0.8) -> li
             len(current) >= per_caption
             or w.start - current[-1].end > max_gap
             or current[-1].text.endswith((".", "?", "!"))
+            or any(current[-1].start < c <= w.start for c in cuts)
         ):
             chunks.append(current)
             current = []
@@ -124,6 +128,7 @@ def build_ass(
     hook_text: str | None = None,
     hook_seconds: float = 3.0,
     captions: bool = True,
+    cuts: tuple[float, ...] = (),
 ) -> str:
     """ASS script for one clip. `words` must already be relative to the clip start."""
     t = TEMPLATES[template]
@@ -160,7 +165,7 @@ def build_ass(
         )
 
     if captions:
-        for chunk in chunk_words(words, words_per_caption):
+        for chunk in chunk_words(words, words_per_caption, cuts=cuts):
             tokens = [_clean(w.text.upper() if t.uppercase else w.text) for w in chunk]
             for i, word in enumerate(chunk):
                 start = word.start

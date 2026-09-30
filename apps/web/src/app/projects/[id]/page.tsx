@@ -66,7 +66,9 @@ export default async function ProjectPage({
 
   const { data: project } = await supabase
     .from("projects")
-    .select("id, title, youtube_url, thumbnail_url, status, error, options, credits_charged, created_at, expires_at")
+    .select(
+      "id, title, youtube_url, youtube_id, thumbnail_url, status, error, options, credits_charged, created_at, expires_at",
+    )
     .eq("id", id)
     .maybeSingle();
   if (!project) notFound();
@@ -349,7 +351,13 @@ export default async function ProjectPage({
                           <PostToYouTube
                             clipId={c.id}
                             defaultTitle={`${c.title ?? `${t.project.clip} ${c.position + 1}`} #Shorts`.slice(0, 100)}
-                            defaultDescription={c.description ?? c.hook_text ?? ""}
+                            defaultDescription={postDescription(
+                              c.description ?? c.hook_text ?? "",
+                              t.youtube.fullVideo,
+                              title,
+                              project.youtube_id,
+                              c.start_seconds,
+                            )}
                             postedUrl={postedUrls.get(c.id)}
                             labels={t.youtube}
                           />
@@ -365,4 +373,20 @@ export default async function ProjectPage({
       </>
     </AppShell>
   );
+}
+
+/**
+ * The clip's description, then a credit line pointing at the moment in the
+ * source video (a clean link, without the share tracking in the pasted URL).
+ */
+function postDescription(
+  text: string,
+  label: string,
+  sourceTitle: string,
+  youtubeId: string | null,
+  startSeconds: number,
+) {
+  if (!youtubeId) return text;
+  const link = `https://www.youtube.com/watch?v=${youtubeId}&t=${Math.floor(startSeconds)}s`;
+  return `${text}\n\n${label}: ${sourceTitle}\n${link}`.trim();
 }

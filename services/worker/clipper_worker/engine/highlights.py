@@ -33,6 +33,8 @@ MAX_DIRECTION_CHARS = 1000
 RANGE_TOLERANCE_SECONDS = 8.0
 # Clips may miss the requested length by this much before they are rejected.
 LENGTH_TOLERANCE_SECONDS = 5.0
+# A cold open outside this length is dropped rather than stretched or cut.
+TEASER_SECONDS = (1.5, 6.0)
 
 
 M = TypeVar("M", bound=BaseModel)
@@ -42,10 +44,16 @@ class ProposedClip(BaseModel):
     start: str = Field(description="Clip start as it appears in the transcript, e.g. 12:05")
     end: str = Field(description="Clip end, same format")
     title: str = Field(description="Click-worthy title, at most 60 characters")
-    hook_text: str = Field(description="On-screen hook for the first seconds, at most 12 words")
+    hook_text: str = Field(
+        description="On-screen hook: a question only the clip answers, at most 10 words"
+    )
     description: str = Field(description="Why this moment travels, at most 150 characters")
     virality_score: int = Field(description="1-100, spread honestly across clips")
     reason: str = Field(description="One sentence on why this moment was picked")
+    teaser_start: str = Field(
+        default="", description="Cold open: marker of the first line to play first, or empty"
+    )
+    teaser_end: str = Field(default="", description="Cold open: marker of its last line, or empty")
 
 
 class ProposedClips(BaseModel):
@@ -61,6 +69,8 @@ class Highlight:
     description: str
     virality_score: int
     reason: str
+    # (start, end) of a moment inside the clip that plays first as a cold open.
+    teaser: tuple[float, float] | None = None
 
 
 class Highlighter(Protocol):
@@ -78,12 +88,20 @@ What makes a strong clip, roughly in priority order:
 4. A complete mini-story: setup, build-up, payoff.
 5. A line that works on its own as a hook in the first three seconds.
 
+Prefer stakes anyone feels without knowing the speaker: danger, health, the body, \
+money, relationships, a surprising fact about ordinary life. A moment that only \
+lands if you know the guest, their community or an earlier part of the video \
+scores lower, however funny it is to fans.
+
 Avoid filler, small talk, topic transitions with no payoff, and long explanations \
 with no emotion. Each clip has to make sense to someone who has not seen the rest \
 of the video, so start at the beginning of a thought and end after its payoff, \
-never mid-sentence. Read the whole transcript before choosing and spread picks \
-across it rather than taking consecutive chunks from the opening minutes. Clips \
-must never overlap.
+never mid-sentence. Of the lines that open the thought, pick the one where the \
+stakes appear soonest, not a slow lead-in such as reading out a listener's \
+question, the host's reaction ("oh oke", "iya", "unik") or a stammered false \
+start. Read the whole transcript before choosing \
+and spread picks across it rather than taking consecutive chunks from the opening \
+minutes. Clips must never overlap.
 
 Timestamps: each transcript line is one spoken phrase, broken where the speaker \
 pauses. start is the [m:ss] marker of the clip's first line and end is the marker \
@@ -98,8 +116,28 @@ information. Do not score everything high; the scores decide which clips get mad
 
 Write title, hook_text and description in the requested output language, in a \
 casual spoken register. If that is the transcript's language, keep the speaker's \
-own words when quoting. hook_text is a sharp quote or statement, not a summary, \
-with no emoji."""
+own words when quoting, with no emoji.
+
+hook_text is on screen for the first three seconds, before the viewer knows who \
+is talking or what about. Its job is to open a question that only the clip \
+answers. Rules:
+- Never give away the punchline, twist or answer; the clip delivers it.
+- It must stand alone: no "he", "she", "this", "that" or name the viewer cannot \
+place yet.
+- Name the concrete stakes (what breaks, who gets hurt, what it costs), short: \
+at most 10 words.
+Good: "Hanya karena sepatu, ekspedisi bisa batal." / "Kenapa pendaki \
+memilih putar balik sebelum puncak?" Bad: "Ini udah enggak mungkin kata dia \
+gitu." (who is he, what is impossible?) / "Anggotanya tiga, dua udah pulang." \
+(the punchline, spent before the story starts).
+
+Cold open: the clip can open with a 2 to 5 second teaser taken from later in \
+the clip, after which the clip plays from its first line. When one or two \
+consecutive lines inside the clip (not its first line) stop a scrolling viewer \
+on their own, give their markers as teaser_start and teaser_end: the most \
+shocking, dramatic or funny moment, one that makes the viewer ask how or why. \
+Never the final answer or the punchline's resolution. Leave both empty when no \
+line works on its own."""
 
 DIRECTION_BLOCK = """
 The user gave a direction for this video. It outranks the principles above where \
@@ -217,6 +255,7 @@ def validate(
             start, end = max(lo, edges[0]), min(hi, edges[1])
         if any(start < h.end and h.start < end for h in out):
             continue
+        teaser = _teaser_edges(words, lines, clip, start, end)
         out.append(
             Highlight(
                 start=round(start, 3),
@@ -226,9 +265,35 @@ def validate(
                 description=clip.description.strip()[:300],
                 virality_score=max(1, min(100, clip.virality_score)),
                 reason=clip.reason.strip()[:300],
+                teaser=teaser,
             )
         )
     return out
+
+
+def _teaser_edges(
+    words: list[Word], lines: list[Line], clip: ProposedClip, start: float, end: float
+) -> tuple[float, float] | None:
+    """Cut points of the clip's cold open, on whole lines, or None.
+
+    It must sit inside the clip, not be its opening line (that would just play
+    twice in a row) and run TEASER_SECONDS.
+    """
+    if not lines or not clip.teaser_start.strip():
+        return None
+    try:
+        a_t = parse_clock(clip.teaser_start)
+        b_t = parse_clock(clip.teaser_end) if clip.teaser_end.strip() else a_t
+    except ValueError:
+        return None
+    a, b = _nearest_line(words, lines, a_t), _nearest_line(words, lines, b_t)
+    if b < a:
+        return None
+    s, e = clip_edges(words, lines[a].first, lines[b].last)
+    lo, hi = TEASER_SECONDS
+    if s < start + 3.0 or e > end + 0.01 or not lo <= e - s <= hi:
+        return None
+    return round(s, 3), round(e, 3)
 
 
 def _nearest_line(words: list[Word], lines: list[Line], t: float) -> int:

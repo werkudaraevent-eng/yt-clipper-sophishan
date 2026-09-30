@@ -34,6 +34,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--words-per-caption", type=int, default=3)
     p.add_argument("--no-captions", action="store_true")
     p.add_argument("--no-hook", action="store_true")
+    p.add_argument("--no-cold-open", action="store_true")
     p.add_argument("--layout", default="auto", choices=["auto", "fill", "fit", "square"])
     p.add_argument("--direction", default="", help="free-text AI direction")
     p.add_argument("--offline", action="store_true", help="no LLM: density heuristic")
@@ -61,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
                 "wordsPerCaption": args.words_per_caption,
             },
             "hookTitle": not args.no_hook,
+            "coldOpen": not args.no_cold_open,
             "layout": args.layout,
             "aiDirection": args.direction,
         }

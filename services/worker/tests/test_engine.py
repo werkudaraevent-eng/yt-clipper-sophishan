@@ -6,7 +6,7 @@ import pytest
 
 from clipper_worker.engine import captions, highlights, reframe
 from clipper_worker.engine.highlights import ProposedClip, ProposedClips
-from clipper_worker.engine.transcript import Word, parse_json3, to_prompt_lines
+from clipper_worker.engine.transcript import Word, parse_json3, slice_words, to_prompt_lines
 from clipper_worker.engine.youtube import pick_caption_track
 
 # --- transcript -------------------------------------------------------------
@@ -358,3 +358,68 @@ def test_pipeline_translates_captions(tmp_path):
     texts = [w.text for w in result.clips[0].words]
     assert texts[:2] == ["kata0", "lain"] and not any(t.startswith("word") for t in texts)
     assert "KATA0" in (tmp_path / "out" / "clip-01.ass").read_text()  # karaoke is uppercase
+
+
+def test_slice_words_leaves_out_the_previous_sentence_tail():
+    # Auto-caption words run on through the silence after them: "plannya." is
+    # spoken by 2712.72 but its caption lasts until the next word at 2713.12.
+    words = [
+        Word("plannya.", 2711.96, 2713.119),
+        Word("Terus", 2713.12, 2713.5),
+        Word("besok", 2713.5, 2713.9),
+    ]
+    assert [w.text for w in slice_words(words, 2712.87, 2714.0)] == ["Terus", "besok"]
+    # A cut inside a word that is still being spoken keeps it.
+    assert [w.text for w in slice_words(words, 2712.2, 2714.0)][0] == "plannya."
+
+
+def test_cold_open_is_a_later_line_inside_the_clip():
+    fake = FakeHighlighter([
+        clip("0:10", "0:45", teaser_start="0:30", teaser_end="0:30"),  # line 6: kept
+        clip("1:00", "1:35", teaser_start="1:00"),  # the clip's own first line
+        clip("2:00", "2:35", teaser_start="2:10", teaser_end="2:15"),  # two lines, ~9s
+        clip("3:00", "3:35", teaser_start="4:00"),  # outside the clip
+    ])  # fmt: skip
+    got = highlights.find_highlights(
+        fake, SPEECH, title="T", window=(0, 300), length_range=(30, 60), output_language="English"
+    )
+    assert len(got) == 4
+    start, end = got[0].teaser
+    assert PHRASES[5][-1].start < start < PHRASES[6][0].start
+    assert PHRASES[6][-1].start < end < PHRASES[7][0].start
+    assert [c.teaser for c in got[1:]] == [None, None, None]
+
+
+@ffmpeg
+def test_cold_open_plays_the_teaser_then_the_whole_clip(tmp_path):
+    from clipper_worker.engine.render import RenderSettings, _join_cold_open, render_clip
+
+    video = tmp_path / "in.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+         "testsrc2=s=640x360:r=25:d=20", "-f", "lavfi", "-i", "sine=d=20",
+         "-shortest", "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+         "-c:a", "aac", str(video)],
+        check=True,
+    )  # fmt: skip
+    words = [Word(f"w{i}", 100 + i, 100.5 + i) for i in range(20)]  # source starts at 100s
+    h = highlights.Highlight(102, 108, "t", "hook", "d", 80, "r", teaser=(110, 112))
+
+    joined, moved_clip, moved = _join_cold_open(video, 100.0, h, words, tmp_path, "c")
+    assert (moved_clip.start, moved_clip.end, moved_clip.teaser) == (0.0, 8.0, None)
+    assert [w.text for w in moved] == ["w10", "w11", "w2", "w3", "w4", "w5", "w6", "w7"]
+    assert moved[0].start == 0.0 and moved[2].start == pytest.approx(2.0)
+
+    out, _thumb = render_clip(video, 100.0, h, words, RenderSettings(layout="fill"), tmp_path, "c")
+    probe = json.loads(subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type:format=duration",
+         "-of", "json", str(out)],
+        check=True, capture_output=True, text=True).stdout)  # fmt: skip
+    assert float(probe["format"]["duration"]) == pytest.approx(8.0, abs=0.2)
+    assert any(s["codec_type"] == "audio" for s in probe["streams"])
+
+
+def test_captions_break_where_the_cold_open_cuts_to_the_clip():
+    words = [Word(w, i * 0.4, i * 0.4 + 0.35) for i, w in enumerate("a b c d e".split())]
+    chunks = captions.chunk_words(words, 3, cuts=(0.7,))
+    assert [[w.text for w in c] for c in chunks] == [["a", "b"], ["c", "d", "e"]]

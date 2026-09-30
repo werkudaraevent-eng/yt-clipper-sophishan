@@ -31,4 +31,5 @@ def test_defaults_match_shared_schema():
     assert o.captions.words_per_caption == 3
     assert o.layout == "auto"
     assert o.hook_title is True
+    assert o.cold_open is True
     assert o.caption_translation is None

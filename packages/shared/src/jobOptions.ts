@@ -43,6 +43,7 @@ export const jobOptionsSchema = z
       })
       .default({}),
     hookTitle: z.boolean().default(true),
+    coldOpen: z.boolean().default(true),
     layout: z.enum(LAYOUTS).default("auto"),
     aiDirection: z.string().max(1000).default(""),
   })

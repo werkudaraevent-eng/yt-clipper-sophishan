@@ -64,7 +64,13 @@ def _dedupe(words: list[Word]) -> list[Word]:
 
 
 def slice_words(words: list[Word], start: float, end: float) -> list[Word]:
-    return [w for w in words if w.end > start and w.start < end]
+    """Words heard between `start` and `end`.
+
+    A clip usually starts just after a word whose caption time runs on through
+    the silence before the next one; judging by its spoken end keeps that word
+    (the tail of the previous sentence) out of the clip's first captions.
+    """
+    return [w for w in words if spoken_end(w) > start and w.start < end]
 
 
 def transcribe_with_whisper(
