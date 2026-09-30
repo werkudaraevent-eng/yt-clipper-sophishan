@@ -5,3 +5,9 @@ export const supabaseConfigured = Boolean(
 
 /** Show "Continue with Google" only once the Google provider is enabled in Supabase. */
 export const googleAuthEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1";
+
+/**
+ * Cloudflare Turnstile on the email sign-in form. Set the site key here and the
+ * secret in Supabase Auth > Attack Protection; Supabase then checks the token.
+ */
+export const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";

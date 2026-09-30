@@ -1,7 +1,8 @@
 import Link from "next/link";
+import Script from "next/script";
 import { LogoMark } from "@/components/AppShell";
 import { Icon } from "@/components/ui/Icon";
-import { googleAuthEnabled, supabaseConfigured } from "@/lib/env";
+import { googleAuthEnabled, supabaseConfigured, turnstileSiteKey } from "@/lib/env";
 import { getDictionary } from "@/lib/i18n/server";
 import { signInWithEmail, signInWithGoogle } from "./actions";
 
@@ -115,6 +116,13 @@ export default async function LoginPage({
               </div>
               <p className="mt-1 px-4 text-body-s text-on-surface-variant">{t.login.emailHint}</p>
             </div>
+            {turnstileSiteKey && (
+              <>
+                <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+                {/* Adds a hidden cf-turnstile-response field to this form. */}
+                <div className="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="auto" data-size="flexible" />
+              </>
+            )}
             <button className="btn-primary h-12" disabled={!supabaseConfigured}>
               {t.login.emailLink}
             </button>

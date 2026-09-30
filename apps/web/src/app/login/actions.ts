@@ -26,11 +26,15 @@ export async function signInWithGoogle(formData: FormData) {
 export async function signInWithEmail(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
   const next = safeNext(formData.get("next"));
+  const captchaToken = formData.get("cf-turnstile-response");
   if (!email) redirect("/login?error=Email%20is%20required");
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${await origin()}/auth/callback?next=${encodeURIComponent(next)}` },
+    options: {
+      emailRedirectTo: `${await origin()}/auth/callback?next=${encodeURIComponent(next)}`,
+      ...(typeof captchaToken === "string" && captchaToken ? { captchaToken } : {}),
+    },
   });
   if (error) redirect(`/login?error=${encodeURIComponent(error.message)}`);
   redirect("/login?sent=1");
