@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
 async function origin() {
@@ -9,12 +10,6 @@ async function origin() {
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto = h.get("x-forwarded-proto") ?? "http";
   return process.env.NEXT_PUBLIC_SITE_URL ?? `${proto}://${host}`;
-}
-
-function safeNext(next: FormDataEntryValue | null) {
-  const value = typeof next === "string" ? next : "/";
-  // Only same-site paths, never "//evil.com".
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
 export async function signInWithGoogle(formData: FormData) {

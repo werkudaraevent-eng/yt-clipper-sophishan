@@ -1,4 +1,5 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
+import { safeNext as safeNextPath } from "./safe-next";
 
 /**
  * Posting clips to the user's YouTube channel: Google OAuth with the upload
@@ -43,9 +44,9 @@ export function callbackUrl(url: URL) {
   return `${process.env.NEXT_PUBLIC_SITE_URL ?? url.origin}/api/youtube/callback`;
 }
 
-/** Only same-site paths, never "//evil.com". */
+/** Only same-site paths; see lib/safe-next. */
 export function safeNext(value: string | null) {
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : "/projects";
+  return safeNextPath(value, "/projects");
 }
 
 export function authUrl(redirectUri: string, state: string): string {
