@@ -50,6 +50,7 @@ class JobOptions(_Model):
     clip_length: ClipLength = Field(default="30to60", alias="clipLength")
     captions: Captions = Captions()
     hook_title: bool = Field(default=True, alias="hookTitle")
+    cold_open: bool = Field(default=True, alias="coldOpen")
     layout: Literal["auto", "fill", "fit", "square"] = "auto"
     ai_direction: str = Field(default="", max_length=1000, alias="aiDirection")
 

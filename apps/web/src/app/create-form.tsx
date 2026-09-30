@@ -36,6 +36,7 @@ const DEFAULTS = {
   position: "bottom" as CaptionPosition,
   wordsPerCaption: 3,
   hookTitle: true,
+  coldOpen: true,
   layout: "auto" as Layout,
   direction: "",
 };
@@ -65,6 +66,7 @@ export function CreateForm({
   const [position, setPosition] = useState(DEFAULTS.position);
   const [wordsPerCaption, setWordsPerCaption] = useState(DEFAULTS.wordsPerCaption);
   const [hookTitle, setHookTitle] = useState(DEFAULTS.hookTitle);
+  const [coldOpen, setColdOpen] = useState(DEFAULTS.coldOpen);
   const [layout, setLayout] = useState(DEFAULTS.layout);
   const [direction, setDirection] = useState(DEFAULTS.direction);
   const [advanced, setAdvanced] = useState(false);
@@ -117,11 +119,12 @@ export function CreateForm({
       clipLength,
       captions: { enabled: captions, template, position, wordsPerCaption },
       hookTitle,
+      coldOpen,
       layout,
       aiDirection: direction,
     }),
     [url, language, translateTo, range, clipLength, captions, template, position,
-     wordsPerCaption, hookTitle, layout, direction], // prettier-ignore
+     wordsPerCaption, hookTitle, coldOpen, layout, direction], // prettier-ignore
   );
 
   function reset() {
@@ -134,6 +137,7 @@ export function CreateForm({
     setPosition(DEFAULTS.position);
     setWordsPerCaption(DEFAULTS.wordsPerCaption);
     setHookTitle(DEFAULTS.hookTitle);
+    setColdOpen(DEFAULTS.coldOpen);
     setLayout(DEFAULTS.layout);
     setDirection(DEFAULTS.direction);
   }
@@ -361,6 +365,12 @@ export function CreateForm({
                   hint={t.create.hookHint}
                   checked={hookTitle}
                   onChange={setHookTitle}
+                />
+                <Toggle
+                  label={t.create.coldOpen}
+                  hint={t.create.coldOpenHint}
+                  checked={coldOpen}
+                  onChange={setColdOpen}
                 />
                 <div className="flex items-center justify-between gap-4">
                   <label htmlFor="wpc" className="text-title-s text-on-surface">

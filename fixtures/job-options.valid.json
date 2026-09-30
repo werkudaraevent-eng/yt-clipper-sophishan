@@ -11,6 +11,7 @@
     "clipLength": "60to90",
     "captions": { "enabled": true, "template": "box", "position": "middle", "wordsPerCaption": 2 },
     "hookTitle": false,
+    "coldOpen": false,
     "layout": "fit",
     "aiDirection": "Ambil bagian 2:00 - 2:50"
   }
