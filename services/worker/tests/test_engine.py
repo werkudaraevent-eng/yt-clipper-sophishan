@@ -6,7 +6,7 @@ import pytest
 
 from clipper_worker.engine import captions, highlights, reframe
 from clipper_worker.engine.highlights import ProposedClip, ProposedClips
-from clipper_worker.engine.transcript import Word, parse_json3, to_prompt_lines
+from clipper_worker.engine.transcript import Word, parse_json3, slice_words, to_prompt_lines
 from clipper_worker.engine.youtube import pick_caption_track
 
 # --- transcript -------------------------------------------------------------
@@ -358,3 +358,16 @@ def test_pipeline_translates_captions(tmp_path):
     texts = [w.text for w in result.clips[0].words]
     assert texts[:2] == ["kata0", "lain"] and not any(t.startswith("word") for t in texts)
     assert "KATA0" in (tmp_path / "out" / "clip-01.ass").read_text()  # karaoke is uppercase
+
+
+def test_slice_words_leaves_out_the_previous_sentence_tail():
+    # Auto-caption words run on through the silence after them: "plannya." is
+    # spoken by 2712.72 but its caption lasts until the next word at 2713.12.
+    words = [
+        Word("plannya.", 2711.96, 2713.119),
+        Word("Terus", 2713.12, 2713.5),
+        Word("besok", 2713.5, 2713.9),
+    ]
+    assert [w.text for w in slice_words(words, 2712.87, 2714.0)] == ["Terus", "besok"]
+    # A cut inside a word that is still being spoken keeps it.
+    assert [w.text for w in slice_words(words, 2712.2, 2714.0)][0] == "plannya."
