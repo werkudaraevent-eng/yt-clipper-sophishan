@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import type { User } from "@supabase/supabase-js";
+import { CHANGELOG_SEEN_COOKIE, hasUnseenRelease } from "@/lib/changelog";
 import { LOCALES } from "@/lib/i18n/dictionaries";
 import { setLocale } from "@/lib/i18n/actions";
 import { getDictionary, getLocale } from "@/lib/i18n/server";
@@ -41,6 +43,25 @@ async function LanguageSwitch() {
   );
 }
 
+/** Top bar link to the release notes, with a small badge while there is a release the visitor hasn't opened. */
+async function WhatsNew({ onChangelog }: { onChangelog: boolean }) {
+  const [t, jar] = await Promise.all([getDictionary(), cookies()]);
+  const unseen = !onChangelog && hasUnseenRelease(jar.get(CHANGELOG_SEEN_COOKIE)?.value);
+  const label = unseen ? t.changelog.unseen : t.changelog.title;
+  return (
+    <Link
+      href="/changelog"
+      title={label}
+      aria-label={label}
+      aria-current={onChangelog ? "page" : undefined}
+      className="state-layer focus-ring relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-on-surface-variant"
+    >
+      <Icon name="campaign" />
+      {unseen && <span className="absolute top-1 right-0.5 h-2 w-2 rounded-full bg-error" />}
+    </Link>
+  );
+}
+
 /**
  * App frame following M3 adaptive layout: a navigation rail from the medium
  * breakpoint up, a bottom navigation bar on compact screens, and a small top
@@ -50,11 +71,14 @@ export async function AppShell({
   user,
   title,
   backHref,
+  onChangelog = false,
   children,
 }: {
   user: User | null;
   title?: string;
   backHref?: string;
+  /** The release notes page itself: no "new" badge on the top bar link. */
+  onChangelog?: boolean;
   children: React.ReactNode;
 }) {
   const t = await getDictionary();
@@ -147,6 +171,7 @@ export async function AppShell({
               <span className="hidden sm:inline">{t.header.credits}</span>
             </Link>
           )}
+          <WhatsNew onChangelog={onChangelog} />
           <div className="hidden sm:block">
             <LanguageSwitch />
           </div>

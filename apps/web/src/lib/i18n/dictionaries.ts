@@ -7,6 +7,14 @@ const en = {
   meta: { description: "Turn long YouTube videos into captioned 9:16 shorts." },
   header: { signIn: "Sign in", signOut: "Sign out", language: "Language", credits: "credits" },
   legal: { privacy: "Privacy Policy", terms: "Terms of Service", agree: "By continuing you agree to the", and: "and the" },
+  changelog: {
+    title: "What's new",
+    heading: "What's new in Sophishan",
+    intro: "New features, improvements and fixes. We note every change you'll notice.",
+    latest: "Latest",
+    unseen: "What's new, with updates you haven't seen",
+    kinds: { new: "New", improved: "Improved", fixed: "Fixed" },
+  },
   nav: {
     home: "Home",
     projects: "Projects",
@@ -355,6 +363,14 @@ const id: Dictionary = {
   meta: { description: "Ubah video YouTube panjang jadi shorts 9:16 lengkap dengan caption." },
   header: { signIn: "Masuk", signOut: "Keluar", language: "Bahasa", credits: "kredit" },
   legal: { privacy: "Kebijakan Privasi", terms: "Syarat Layanan", agree: "Dengan melanjutkan, kamu menyetujui", and: "dan" },
+  changelog: {
+    title: "Yang baru",
+    heading: "Yang baru di Sophishan",
+    intro: "Fitur baru, peningkatan, dan perbaikan. Kami catat setiap ada perubahan yang terasa buat kamu.",
+    latest: "Terbaru",
+    unseen: "Yang baru, ada pembaruan yang belum kamu lihat",
+    kinds: { new: "Baru", improved: "Lebih baik", fixed: "Perbaikan" },
+  },
   nav: {
     home: "Beranda",
     projects: "Proyek",

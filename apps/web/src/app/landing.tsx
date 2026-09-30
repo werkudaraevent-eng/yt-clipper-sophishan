@@ -103,6 +103,9 @@ export async function Landing() {
           <Link href="/terms" className="hover:text-on-surface hover:underline">
             {t.legal.terms}
           </Link>
+          <Link href="/changelog" className="hover:text-on-surface hover:underline">
+            {t.changelog.title}
+          </Link>
         </footer>
       </main>
     </AppShell>
