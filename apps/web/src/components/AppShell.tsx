@@ -5,6 +5,7 @@ import { CHANGELOG_SEEN_COOKIE, hasUnseenRelease } from "@/lib/changelog";
 import { LOCALES } from "@/lib/i18n/dictionaries";
 import { setLocale } from "@/lib/i18n/actions";
 import { getDictionary, getLocale } from "@/lib/i18n/server";
+import { schedulingEnabled } from "@/lib/scheduler";
 import { currentCredits, currentIsAdmin } from "@/lib/session";
 import { NavDestinations, type Destination } from "./NavDestinations";
 import { ThemeToggle } from "./ThemeToggle";
@@ -108,8 +109,11 @@ export async function AppShell({
   const items: Destination[] = [
     { href: "/", label: t.nav.home, icon: "home", activeIcon: "homeFill" },
     { href: "/projects", label: t.nav.projects, icon: "videoLibrary", activeIcon: "videoLibraryFill" },
-    { href: "/credits", label: t.nav.credits, icon: "toll", activeIcon: "tollFill" },
   ];
+  if (schedulingEnabled) {
+    items.push({ href: "/schedule", label: t.nav.schedule, icon: "calendarMonth", activeIcon: "calendarMonthFill" });
+  }
+  items.push({ href: "/credits", label: t.nav.credits, icon: "toll", activeIcon: "tollFill" });
   if (isAdmin) items.push({ href: "/admin", label: t.nav.admin, icon: "admin", activeIcon: "adminFill" });
   const initials = (user.email ?? "?").slice(0, 1).toUpperCase();
 

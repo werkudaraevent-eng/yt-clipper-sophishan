@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseConfigured } from "@/lib/env";
 
-const PROTECTED_PREFIXES = ["/projects"];
+const PROTECTED_PREFIXES = ["/projects", "/schedule"];
 
 /** Refresh the auth session cookie on every request and gate private pages. */
 export async function updateSession(request: NextRequest) {
