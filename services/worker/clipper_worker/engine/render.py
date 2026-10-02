@@ -52,9 +52,14 @@ def render_clip(
     start = clip.start - source_offset
     duration = clip.end - clip.start
 
+    clip_words = [
+        Word(w.text, w.start - clip.start, w.end - clip.start)
+        for w in slice_words(words, clip.start, clip.end)
+    ]
     if settings.layout == "auto":
-        centers, src_w, src_h = reframe.face_track(source, start, start + duration)
-        frame = reframe.tracking_filter(centers, src_w, src_h)
+        samples, src_w, src_h = reframe.face_track(source, start, start + duration)
+        keyframes = reframe.plan_speaker_crops(samples, clip_words)
+        frame = reframe.tracking_filter(keyframes, src_w, src_h)
     else:
         frame = reframe.static_filter(settings.layout)
 
@@ -64,10 +69,6 @@ def render_clip(
         cmd_file.write_text(frame.sendcmd or "")
         graph = graph.replace("{cmds}", _escape_filter_path(cmd_file))
 
-    clip_words = [
-        Word(w.text, w.start - clip.start, w.end - clip.start)
-        for w in slice_words(words, clip.start, clip.end)
-    ]
     ass = write_ass(
         out_dir / f"{name}.ass",
         words=clip_words,
