@@ -3,6 +3,7 @@
 import { jobOptionsSchema } from "@clipper/shared";
 import { redirect } from "next/navigation";
 import { supabaseConfigured } from "@/lib/env";
+import { getLocale } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { fetchVideoMeta, youtubeId } from "@/lib/youtube";
 
@@ -59,6 +60,9 @@ export async function createProject(
     return { code: "insufficientCredits", error: null };
   }
   if (error || !data) return error ? { error: error.message } : { code: "createFailed", error: null };
+
+  // The worker writes the "clips are ready" email in the language last used.
+  await supabase.from("profiles").update({ ui_language: await getLocale() }).eq("id", user.id);
 
   redirect(`/projects/${data.id}`);
 }
