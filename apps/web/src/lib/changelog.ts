@@ -72,6 +72,14 @@ export const RELEASES: Release[] = [
           en: "No need to wait on the project page. We email you when the clips are done, or if it fails, with word that the credits are back. Browser notifications work too, and the switch on the progress card turns it off.",
         },
       },
+      {
+        kind: "fixed",
+        title: { id: "Download tidak lagi macet di 2%", en: "Downloads no longer stall at 2%" },
+        body: {
+          id: "Saat kamu memilih sebagian video, potongannya kini diunduh langsung tanpa diolah ulang, jadi jauh lebih cepat dan persentasenya terus bergerak.",
+          en: "When you pick part of a video, that section is now fetched as is instead of being re-encoded, so it's much faster and the percentage keeps moving.",
+        },
+      },
     ],
   },
   {

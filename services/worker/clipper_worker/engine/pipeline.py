@@ -119,6 +119,7 @@ def fetch_youtube(options: JobOptions, work: Path, report: ProgressFn) -> Source
         work,
         duration=info.duration,
         on_progress=stage_reporter(report, "download", 0.03, 0.24),
+        info=info.raw,
     )
     return Source(
         path=path,
