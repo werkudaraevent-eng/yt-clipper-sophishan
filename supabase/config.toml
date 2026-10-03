@@ -14,3 +14,12 @@ port = 54323
 [auth]
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+
+# Production uses the same files: paste them into Authentication > Emails.
+[auth.email.template.magic_link]
+subject = "Link masuk Sophishan"
+content_path = "./supabase/templates/magic-link.html"
+
+[auth.email.template.confirmation]
+subject = "Konfirmasi email Sophishan"
+content_path = "./supabase/templates/confirm-signup.html"

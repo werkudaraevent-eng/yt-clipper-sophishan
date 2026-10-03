@@ -18,6 +18,23 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03",
+    title: {
+      id: "Link masuk lewat email lebih andal",
+      en: "Email sign-in links you can trust",
+    },
+    items: [
+      {
+        kind: "fixed",
+        title: { id: "Link email tidak lagi gagal", en: "Email links no longer fail" },
+        body: {
+          id: "Link masuk dan konfirmasi dari email kini tetap jalan walau dibuka di browser atau HP lain, dan emailnya datang dari login@sofish.tech dengan tampilan Sophishan.",
+          en: "Sign-in and confirmation links now work even when opened in another browser or phone, and the email comes from login@sofish.tech with the Sophishan look.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-10-02",
     title: {
       id: "Crop tetap di orang yang sedang bercerita",
