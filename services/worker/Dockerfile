@@ -18,9 +18,12 @@ COPY pyproject.toml ./
 COPY clipper_worker ./clipper_worker
 RUN pip install --no-cache-dir '.[asr]'
 
+# HF_HOME: Whisper models (about 1.6 GB) live on the work volume, so they are
+# downloaded once instead of after every rebuild.
 ENV CLIPPER_FACE_MODEL=/opt/models/yunet.onnx \
     CLIPPER_FONTS_DIR=/usr/share/fonts \
-    CLIPPER_WORK_DIR=/work
+    CLIPPER_WORK_DIR=/work \
+    HF_HOME=/work/.models
 
 RUN useradd --create-home clipper && mkdir -p /work && chown clipper /work
 USER clipper

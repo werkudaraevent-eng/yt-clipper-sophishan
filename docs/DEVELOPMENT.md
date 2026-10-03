@@ -80,7 +80,7 @@ Pipeline stages (`clipper_worker/engine/`):
 | Stage | Module | Notes |
 |---|---|---|
 | download | `youtube.py` | yt-dlp metadata, json3 caption track, section download (H.264 ≤1080p). `YTDLP_COOKIES_FILE` / `YTDLP_PROXY` for servers YouTube blocks |
-| transcribe | `transcript.py` | Word timings from YouTube captions; faster-whisper (`asr` extra, `CLIPPER_WHISPER_MODEL`) when there are none |
+| transcribe | `transcript.py` | Word timings from faster-whisper on the downloaded audio (`asr` extra, `CLIPPER_WHISPER_MODEL`, default `large-v3-turbo`); YouTube captions are the fallback. `CLIPPER_TRANSCRIBER=youtube` uses the captions first, as before |
 | analyze | `highlights.py` | Claude with structured output (`CLIPPER_LLM_MODEL`, default `claude-opus-5`) and server-side refusal fallback; clips are snapped to word edges and checked for length/overlap |
 | render | `reframe.py`, `captions.py`, `render.py` | One FFmpeg pass: reframe (Auto = YuNet face tracking via `CLIPPER_FACE_MODEL`, Haar fallback), ASS captions + hook title, x264/AAC |
 
