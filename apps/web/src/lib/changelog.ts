@@ -19,8 +19,43 @@ export type Release = {
 export const RELEASES: Release[] = [
   {
     date: "2026-10-03",
-    title: { id: "Lihat posisi antreanmu", en: "See your place in the queue" },
+    title: {
+      id: "Jadwalkan posting di jam ramai penontonmu",
+      en: "Schedule posts for when your viewers are around",
+    },
     items: [
+      {
+        kind: "new",
+        title: { id: "Jadwalkan posting", en: "Scheduled posts" },
+        body: {
+          id: "Saat posting ke YouTube, pilih Jadwalkan dan ambil salah satu jam yang disarankan. Klip diunggah sendiri di jam itu, walau kamu sedang offline.",
+          en: "When you post to YouTube, choose Schedule and pick one of the suggested times. The clip goes up on its own, even while you're offline.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Jadwalkan beberapa klip sekaligus", en: "Schedule several clips at once" },
+        body: {
+          id: "Pilih beberapa klip di hasil proyek, lalu klip dibagi 1 atau 2 per hari di jam ramai.",
+          en: "Select several clips in a project's results and they're spread out, 1 or 2 a day, at busy hours.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Halaman Jadwal", en: "Schedule page" },
+        body: {
+          id: "Lihat antrean posting per hari, ubah jam atau batalkan, dan lihat view 24 jam pertama tiap Shorts. Setelah 10 posting, saran jam memakai data channel-mu sendiri.",
+          en: "See your posting queue by day, change a time or cancel, and check each Short's first-day views. After 10 posts, suggestions use your own channel's data.",
+        },
+      },
+      {
+        kind: "fixed",
+        title: { id: "Link email tidak lagi gagal", en: "Email links no longer fail" },
+        body: {
+          id: "Link masuk dan konfirmasi dari email kini tetap jalan walau dibuka di browser atau HP lain, dan emailnya datang dari login@sofish.tech dengan tampilan Sophishan.",
+          en: "Sign-in and confirmation links now work even when opened in another browser or phone, and the email comes from login@sofish.tech with the Sophishan look.",
+        },
+      },
       {
         kind: "new",
         title: { id: "Posisi antrean dan perkiraan mulai", en: "Queue position and start estimate" },
