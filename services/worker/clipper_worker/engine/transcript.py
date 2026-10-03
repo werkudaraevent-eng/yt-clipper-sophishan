@@ -79,8 +79,19 @@ def transcribe_with_whisper(
     model_size: str,
     on_progress: Callable[[float], None] | None = None,
 ) -> list[Word]:
-    """Word timings from faster-whisper (optional `asr` extra).
+    return transcribe_audio(media_path, language, model_size, on_progress)[1]
 
+
+def transcribe_audio(
+    media_path: Path,
+    language: str | None,
+    model_size: str,
+    on_progress: Callable[[float], None] | None = None,
+) -> tuple[str | None, list[Word]]:
+    """(spoken language, word timings) from faster-whisper (optional `asr` extra).
+
+    Timings come from the audio itself, so captions land on the words as
+    they are said. With no language given, it is detected per segment.
     `on_progress` gets the transcribed fraction of the audio, 0..1.
     """
     try:
@@ -91,12 +102,16 @@ def transcribe_with_whisper(
             "(pip install 'clipper-worker[asr]')"
         ) from exc
 
+    lang = None if language in (None, "auto") else language.split("-")[0]
     model = WhisperModel(model_size, device="auto", compute_type="auto")
     segments, info = model.transcribe(
         str(media_path),
-        language=None if language in (None, "auto") else language.split("-")[0],
+        language=lang,
+        multilingual=lang is None,
         word_timestamps=True,
         vad_filter=True,
+        # Stops one misheard line from repeating through the rest of the audio.
+        condition_on_previous_text=False,
     )
     words: list[Word] = []
     for segment in segments:
@@ -106,7 +121,7 @@ def transcribe_with_whisper(
             text = w.word.strip()
             if text:
                 words.append(Word(text, round(w.start, 3), round(w.end, 3)))
-    return words
+    return lang or info.language, words
 
 
 def format_clock(seconds: float) -> str:

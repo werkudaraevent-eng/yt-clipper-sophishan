@@ -80,6 +80,14 @@ export const RELEASES: Release[] = [
           en: "When you pick part of a video, that section is now fetched as is instead of being re-encoded, so it's much faster and the percentage keeps moving.",
         },
       },
+      {
+        kind: "improved",
+        title: { id: "Caption pas dengan omongan", en: "Captions in sync with the speech" },
+        body: {
+          id: "Caption kini dibuat dari suara video itu sendiri, bukan dari subtitle YouTube. Kata muncul tepat saat diucapkan, dan omongan campuran Indonesia-Inggris tetap tertulis benar.",
+          en: "Captions are now made from the video's own audio instead of YouTube's subtitles. Words show up as they're said, and talk that mixes Indonesian and English comes out right.",
+        },
+      },
     ],
   },
   {
