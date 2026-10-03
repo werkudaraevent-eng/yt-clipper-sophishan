@@ -18,7 +18,7 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
-    date: "2026-10-01",
+    date: "2026-10-03",
     title: {
       id: "Jadwalkan posting di jam ramai penontonmu",
       en: "Schedule posts for when your viewers are around",
@@ -46,6 +46,23 @@ export const RELEASES: Release[] = [
         body: {
           id: "Lihat antrean posting per hari, ubah jam atau batalkan, dan lihat view 24 jam pertama tiap Shorts. Setelah 10 posting, saran jam memakai data channel-mu sendiri.",
           en: "See your posting queue by day, change a time or cancel, and check each Short's first-day views. After 10 posts, suggestions use your own channel's data.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-10-02",
+    title: {
+      id: "Crop tetap di orang yang sedang bercerita",
+      en: "The crop stays on whoever is telling the story",
+    },
+    items: [
+      {
+        kind: "fixed",
+        title: { id: "Fokus crop di podcast", en: "Crop focus in podcasts" },
+        body: {
+          id: "Di video berisi beberapa orang, crop vertikal kini mengikuti orang yang sedang bicara, bukan wajah terbesar. Tawa, teriakan, atau sahutan singkat dari orang lain tidak lagi memindahkan crop.",
+          en: "In videos with several people, the vertical crop now follows whoever is talking instead of the biggest face. A laugh, a shout or a quick reply from someone else no longer moves it.",
         },
       },
     ],

@@ -223,10 +223,82 @@ def test_plan_crops_ignores_jitter_and_follows_real_moves():
 
 
 def test_tracking_filter_writes_sendcmd_for_moves():
-    f = reframe.tracking_filter([(0, 0.25), (5, 0.25), (6, 0.8), (9, 0.8), (12, 0.8)], 1920, 1080)
+    f = reframe.tracking_filter([(0, 0.25), (6, 0.8)], 1920, 1080)
     assert f.sendcmd and "crop x" in f.sendcmd
     assert "sendcmd=f='{cmds}'" in f.filter
     assert reframe.tracking_filter([], 1920, 1080).sendcmd is None
+
+
+def podcast(talking, seconds=20.0, cut_at=None):
+    """Samples of four seated people; `talking(person, t)` says whose lips move."""
+    samples = []
+    for i in range(int(seconds * 6)):
+        t = i / 6
+        shot = 1 if cut_at is not None and t >= cut_at else 0
+        faces = tuple(
+            reframe.Face(
+                track=shot * 10 + p,
+                x=0.15 + 0.23 * p,
+                # The listener on the right sits closest to the camera.
+                area=0.02 if p == 3 else 0.01,
+                activity=0.6 if talking(p, t) else 0.05,
+            )
+            for p in range(4)
+        )
+        samples.append(reframe.Sample(t, faces, cut=shot == 1 and samples[-1].faces[0].track < 10))
+    return samples
+
+
+def speech(*spans):
+    return [
+        Word("w", t, t + 0.3)
+        for a, b in spans
+        for t in [a + i * 0.35 for i in range(int((b - a) / 0.35))]
+    ]
+
+
+def test_crop_stays_on_the_storyteller_through_a_laugh():
+    # Person 1 tells a story; person 3 (the biggest face) bursts out laughing
+    # and shouting for 1.5s in the middle of it.
+    def talking(p, t):
+        return (p == 1 and t < 20) or (p == 3 and 8 <= t < 9.5)
+
+    plan = reframe.plan_speaker_crops(podcast(talking), speech((0, 20)))
+    assert plan == [(0.0, pytest.approx(0.38))]
+
+
+def test_crop_moves_when_someone_else_takes_over():
+    def talking(p, t):
+        return (p == 0 and t < 10) or (p == 2 and t >= 10.5) or (p == 0 and 15 <= t < 15.8)
+
+    plan = reframe.plan_speaker_crops(podcast(talking), speech((0, 10), (10.5, 20)))
+    assert [round(x, 2) for _, x in plan] == [0.15, 0.61]
+    assert plan[1][0] == pytest.approx(10.5, abs=0.5)
+
+
+def test_crop_ignores_lip_movement_while_nobody_speaks():
+    # Person 2 chews/laughs silently in a pause; the transcript has no words then.
+    def talking(p, t):
+        return (p == 0 and t < 8) or (p == 2 and 8 <= t < 12) or (p == 0 and t >= 12)
+
+    plan = reframe.plan_speaker_crops(podcast(talking), speech((0, 8), (12, 20)))
+    assert [round(x, 2) for _, x in plan] == [0.15]
+
+
+def test_crop_follows_a_camera_cut():
+    def talking(p, t):
+        return p == 1
+
+    plan = reframe.plan_speaker_crops(podcast(talking, cut_at=10.0), speech((0, 20)))
+    # New shot: biggest face first, then the speaker within that shot.
+    assert [round(x, 2) for _, x in plan] == [0.38, 0.84, 0.38]
+    assert plan[1][0] == pytest.approx(10.0, abs=0.2)
+
+
+def test_crop_falls_back_to_the_largest_face_without_speech():
+    plan = reframe.plan_speaker_crops(podcast(lambda p, t: False), [])
+    assert [round(x, 2) for _, x in plan] == [0.84]
+    assert reframe.plan_speaker_crops([reframe.Sample(0.0, ())], []) == []
 
 
 # --- render (needs ffmpeg) ------------------------------------------------------
