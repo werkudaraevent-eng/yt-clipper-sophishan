@@ -107,6 +107,11 @@ export default async function ProjectPage({
   }
 
   const status = project.status as ProjectStatus;
+  // Where a waiting project stands in line, so the first paint already shows it.
+  const { data: queue } =
+    job?.status === "queued"
+      ? await supabase.rpc("queue_position", { p_project_id: id })
+      : { data: null };
   const options = project.options as JobOptions;
   const title = project.title ?? t.projects.untitled;
   const cost = project.credits_charged as number;
@@ -129,7 +134,7 @@ export default async function ProjectPage({
     return (
       <AppShell user={user} title={title} backHref="/projects">
         <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-          <Progress projectId={project.id} projectStatus={status} initial={job ?? null} />
+          <Progress projectId={project.id} projectStatus={status} initial={job ?? null} initialQueue={queue?.[0] ?? null} />
           <aside className="flex flex-col gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
             <a
               href={project.youtube_url}

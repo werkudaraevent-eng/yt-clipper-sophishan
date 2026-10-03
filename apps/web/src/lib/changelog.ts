@@ -56,6 +56,14 @@ export const RELEASES: Release[] = [
           en: "Sign-in and confirmation links now work even when opened in another browser or phone, and the email comes from login@sofish.tech with the Sophishan look.",
         },
       },
+      {
+        kind: "new",
+        title: { id: "Posisi antrean dan perkiraan mulai", en: "Queue position and start estimate" },
+        body: {
+          id: "Saat project masih menunggu, halamannya menunjukkan posisimu di antrean, berapa project di depanmu, dan kira-kira kapan mulai diproses.",
+          en: "While a project is waiting, its page shows your place in the queue, how many projects are ahead of you, and roughly when it will start.",
+        },
+      },
     ],
   },
   {
