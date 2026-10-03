@@ -416,6 +416,17 @@ const en = {
     stale:
       "No update from the worker for {time}. It may be stuck; after 30 minutes the job is retried automatically.",
   },
+  notify: {
+    title: "Notify me when clips are ready",
+    hint: "We'll email {email} as soon as the clips are done. If it fails, we'll tell you and the credits come back.",
+    hintShort: "Email to {email} when the clips are done.",
+    browser: "Also with a browser notification",
+    browserOn: "Browser notifications are on while this tab is open",
+    readyTitle: "Your clips are ready",
+    readyBody: "Open Sofish to download or post them.",
+    failedTitle: "Your project failed",
+    failedBody: "The credits are back in your balance.",
+  },
   admin: {
     link: "Admin",
     title: "Admin",
@@ -878,6 +889,17 @@ const id: Dictionary = {
     lastUpdate: "Update terakhir dari worker {time} lalu",
     stale:
       "Tidak ada kabar dari worker selama {time}. Mungkin macet; setelah 30 menit job otomatis dicoba ulang.",
+  },
+  notify: {
+    title: "Kabari saya saat klip siap",
+    hint: "Kami kirim email ke {email} begitu klip jadi. Kalau gagal, kami kabari juga dan kreditnya kembali.",
+    hintShort: "Email ke {email} begitu klip jadi.",
+    browser: "Juga lewat notifikasi browser",
+    browserOn: "Notifikasi browser aktif selama tab ini terbuka",
+    readyTitle: "Klip kamu sudah siap",
+    readyBody: "Buka Sofish untuk mengunduh atau posting.",
+    failedTitle: "Project kamu gagal diproses",
+    failedBody: "Kreditnya sudah kembali ke saldo kamu.",
   },
   admin: {
     link: "Admin",

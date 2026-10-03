@@ -64,6 +64,14 @@ export const RELEASES: Release[] = [
           en: "While a project is waiting, its page shows your place in the queue, how many projects are ahead of you, and roughly when it will start.",
         },
       },
+      {
+        kind: "new",
+        title: { id: "Kabari saya saat klip siap", en: "Notify me when clips are ready" },
+        body: {
+          id: "Tidak perlu menunggu di halaman project. Kami kirim email begitu klip jadi, atau kalau gagal beserta kabar bahwa kreditnya kembali. Bisa juga lewat notifikasi browser, dan bisa dimatikan dari sakelar di kartu progres.",
+          en: "No need to wait on the project page. We email you when the clips are done, or if it fails, with word that the credits are back. Browser notifications work too, and the switch on the progress card turns it off.",
+        },
+      },
     ],
   },
   {

@@ -117,6 +117,11 @@ export default async function ProjectPage({
   const cost = project.credits_charged as number;
   const tag = locale === "id" ? "id-ID" : "en-US";
   const running = status === "queued" || status === "processing";
+  // The "notify me" switch on the progress card.
+  const { data: profile } =
+    running && user
+      ? await supabase.from("profiles").select("notify_email").eq("id", user.id).maybeSingle()
+      : { data: null };
   const language =
     options.videoLanguage === "auto"
       ? t.create.autoDetect
@@ -134,7 +139,9 @@ export default async function ProjectPage({
     return (
       <AppShell user={user} title={title} backHref="/projects">
         <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-          <Progress projectId={project.id} projectStatus={status} initial={job ?? null} initialQueue={queue?.[0] ?? null} />
+          <Progress projectId={project.id} projectStatus={status} initial={job ?? null} initialQueue={queue?.[0] ?? null}
+            notify={profile ? { on: profile.notify_email, email: user?.email ?? null } : null}
+          />
           <aside className="flex flex-col gap-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-4">
             <a
               href={project.youtube_url}
