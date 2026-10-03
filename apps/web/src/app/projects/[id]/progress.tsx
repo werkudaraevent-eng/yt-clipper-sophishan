@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Icon } from "@/components/ui/Icon";
-import { fill } from "@/lib/i18n/dictionaries";
+import { type Dictionary, fill } from "@/lib/i18n/dictionaries";
 import { useDictionary } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,7 +21,16 @@ type JobState = {
   locked_at: string | null;
 };
 
+export type QueuePlace = {
+  place: number;
+  workers: number;
+  avg_seconds: number;
+  eta_seconds: number;
+};
+
 const POLL_MS = 3000;
+// Above this the page says the queue is busy and that it can be closed.
+const BUSY_ETA_SECONDS = 60 * 60;
 // Workers report at least every few seconds while downloading or transcribing;
 // the LLM call and each clip render can run a minute or two without a report.
 const STALE_MS = 3 * 60 * 1000;
@@ -32,19 +41,31 @@ function duration(ms: number) {
   return m ? `${m}m ${String(s % 60).padStart(2, "0")}s` : `${s}s`;
 }
 
+// An estimate, so rounded up to 5 minutes: "15 menit", "1 jam 50 menit".
+function eta(seconds: number, t: Dictionary["progress"]) {
+  const total = Math.max(5, Math.ceil(seconds / 300) * 5);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (!h) return fill(t.minutes, { m });
+  return m ? fill(t.hoursMinutes, { h, m }) : fill(t.hours, { h });
+}
+
 export function Progress({
   projectId,
   projectStatus,
   initial,
+  initialQueue,
 }: {
   projectId: string;
   projectStatus: string;
   initial: JobState | null;
+  initialQueue: QueuePlace | null;
 }) {
   const router = useRouter();
   const t = useDictionary();
   const [job, setJob] = useState<JobState | null>(initial);
   const [now, setNow] = useState(() => Date.now());
+  const [queue, setQueue] = useState<QueuePlace | null>(initialQueue);
 
   useEffect(() => {
     const supabase = createClient();
@@ -61,6 +82,12 @@ export function Progress({
           .maybeSingle(),
       ]);
       if (latest) setJob(latest);
+      if (latest?.status === "queued") {
+        const { data: place } = await supabase.rpc("queue_position", { p_project_id: projectId });
+        setQueue((place as QueuePlace[] | null)?.[0] ?? null);
+      } else if (latest) {
+        setQueue(null);
+      }
       // Re-render the page (badge, clips, error) whenever the project moves on.
       if (project && project.status !== projectStatus) {
         clearInterval(timer);
@@ -81,6 +108,8 @@ export function Progress({
   const sinceUpdate = job?.locked_at ? now - Date.parse(job.locked_at) : 0;
   const stale = running && sinceUpdate > STALE_MS;
   const stage = current as keyof typeof t.progress.stages | null;
+  const waiting = !running && queue ? queue : null;
+  const ahead = waiting ? waiting.place - 1 : 0;
 
   return (
     <section className="flex flex-col gap-5 rounded-xl bg-surface-container-low p-5 sm:p-6" aria-live="polite">
@@ -96,10 +125,29 @@ export function Progress({
       <div className="flex items-end justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-headline-s text-on-surface sm:text-headline-m">
-            {stage ? (t.progress.stages[stage] ?? stage) : t.progress.waiting}
+            {stage
+              ? (t.progress.stages[stage] ?? stage)
+              : waiting
+                ? ahead
+                  ? fill(t.progress.queuePlace, { n: waiting.place })
+                  : t.progress.queueNext
+                : t.progress.waiting}
           </h2>
           {stage && t.progress.stageHints[stage] && (
             <p className="mt-1 text-body-m text-on-surface-variant">{t.progress.stageHints[stage]}</p>
+          )}
+          {waiting && !ahead && (
+            <p className="mt-1 text-body-m text-on-surface-variant">{t.progress.queueNextHint}</p>
+          )}
+          {waiting && ahead > 0 && (
+            <p className="mt-1 text-body-m text-on-surface-variant">
+              <span className="sm:hidden">
+                {fill(t.progress.queueAheadShort, { n: ahead, time: eta(waiting.eta_seconds, t.progress) })}
+              </span>
+              <span className="hidden sm:inline">
+                {fill(t.progress.queueAhead, { n: ahead, time: eta(waiting.eta_seconds, t.progress) })}
+              </span>
+            </p>
           )}
         </div>
         {running && (
@@ -151,6 +199,12 @@ export function Progress({
         </p>
       )}
 
+      {waiting && waiting.eta_seconds > BUSY_ETA_SECONDS && (
+        <p className="flex gap-2 rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
+          <Icon name="hourglass" size={20} className="shrink-0" />
+          {t.progress.queueBusy}
+        </p>
+      )}
       {stale && (
         <p role="alert" className="flex gap-2 rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
           <Icon name="error" size={20} className="shrink-0" />

@@ -48,6 +48,22 @@ export const RELEASES: Release[] = [
           en: "See your posting queue by day, change a time or cancel, and check each Short's first-day views. After 10 posts, suggestions use your own channel's data.",
         },
       },
+      {
+        kind: "fixed",
+        title: { id: "Link email tidak lagi gagal", en: "Email links no longer fail" },
+        body: {
+          id: "Link masuk dan konfirmasi dari email kini tetap jalan walau dibuka di browser atau HP lain, dan emailnya datang dari login@sofish.tech dengan tampilan Sophishan.",
+          en: "Sign-in and confirmation links now work even when opened in another browser or phone, and the email comes from login@sofish.tech with the Sophishan look.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Posisi antrean dan perkiraan mulai", en: "Queue position and start estimate" },
+        body: {
+          id: "Saat project masih menunggu, halamannya menunjukkan posisimu di antrean, berapa project di depanmu, dan kira-kira kapan mulai diproses.",
+          en: "While a project is waiting, its page shows your place in the queue, how many projects are ahead of you, and roughly when it will start.",
+        },
+      },
     ],
   },
   {
