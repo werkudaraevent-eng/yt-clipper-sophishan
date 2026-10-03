@@ -305,6 +305,16 @@ const en = {
     after: "after:",
     waiting: "Waiting for a worker…",
     queuedFor: "In the queue for {time}",
+    queuePlace: "#{n} in the queue",
+    queueNext: "Up next",
+    queueAhead: "{n} projects ahead of you. Expected to start in about {time}.",
+    queueAheadShort: "{n} ahead of you. Starts in about {time}.",
+    queueNextHint: "Starts as soon as a worker frees up, usually within a few minutes.",
+    queueBusy:
+      "The queue is busy. You don't need to wait on this page: close it, and your clips will show up under Projects when they're done.",
+    minutes: "{m} min",
+    hours: "{h} h",
+    hoursMinutes: "{h} h {m} min",
     elapsed: "Total time {time}",
     lastUpdate: "Last update from the worker {time} ago",
     stale:
@@ -662,6 +672,16 @@ const id: Dictionary = {
     after: "setelah:",
     waiting: "Menunggu worker…",
     queuedFor: "Dalam antrean selama {time}",
+    queuePlace: "Antrean ke-{n}",
+    queueNext: "Giliran berikutnya",
+    queueAhead: "Ada {n} project di depanmu. Perkiraan mulai sekitar {time} lagi.",
+    queueAheadShort: "{n} project di depanmu. Mulai sekitar {time} lagi.",
+    queueNextHint: "Mulai begitu ada worker yang selesai, biasanya dalam beberapa menit.",
+    queueBusy:
+      "Antrean sedang ramai. Kamu tidak perlu menunggu di halaman ini: tutup saja, dan klip akan muncul di menu Proyek begitu selesai.",
+    minutes: "{m} menit",
+    hours: "{h} jam",
+    hoursMinutes: "{h} jam {m} menit",
     elapsed: "Total waktu {time}",
     lastUpdate: "Update terakhir dari worker {time} lalu",
     stale:

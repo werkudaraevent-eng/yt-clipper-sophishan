@@ -18,6 +18,20 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-03",
+    title: { id: "Lihat posisi antreanmu", en: "See your place in the queue" },
+    items: [
+      {
+        kind: "new",
+        title: { id: "Posisi antrean dan perkiraan mulai", en: "Queue position and start estimate" },
+        body: {
+          id: "Saat project masih menunggu, halamannya menunjukkan posisimu di antrean, berapa project di depanmu, dan kira-kira kapan mulai diproses.",
+          en: "While a project is waiting, its page shows your place in the queue, how many projects are ahead of you, and roughly when it will start.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-10-02",
     title: {
       id: "Crop tetap di orang yang sedang bercerita",
