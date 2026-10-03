@@ -8,16 +8,18 @@ export function Toggle({
   onChange,
   label,
   hint,
+  labelClassName = "text-title-s",
 }: {
   checked: boolean;
   onChange: (value: boolean) => void;
   label: string;
   hint?: string;
+  labelClassName?: string;
 }) {
   const id = useId();
   return (
     <div className="flex items-center justify-between gap-4">
-      <label htmlFor={id} className="text-title-s text-on-surface">
+      <label htmlFor={id} className={`${labelClassName} text-on-surface`}>
         {label}
         {hint && <span className="block text-body-s text-on-surface-variant">{hint}</span>}
       </label>
