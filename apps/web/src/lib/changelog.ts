@@ -18,6 +18,23 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-02",
+    title: {
+      id: "Crop tetap di orang yang sedang bercerita",
+      en: "The crop stays on whoever is telling the story",
+    },
+    items: [
+      {
+        kind: "fixed",
+        title: { id: "Fokus crop di podcast", en: "Crop focus in podcasts" },
+        body: {
+          id: "Di video berisi beberapa orang, crop vertikal kini mengikuti orang yang sedang bicara, bukan wajah terbesar. Tawa, teriakan, atau sahutan singkat dari orang lain tidak lagi memindahkan crop.",
+          en: "In videos with several people, the vertical crop now follows whoever is talking instead of the biggest face. A laugh, a shout or a quick reply from someone else no longer moves it.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-09-30",
     title: {
       id: "Cold open dan hook yang bikin orang berhenti scroll",
