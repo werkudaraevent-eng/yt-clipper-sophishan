@@ -95,6 +95,26 @@ export async function Landing() {
           </div>
         </section>
 
+        <section className="px-4 py-16 sm:px-8">
+          <div className="mx-auto flex max-w-[800px] flex-col gap-8">
+            <h2 className="text-center text-headline-m text-on-surface">{t.landing.faqTitle}</h2>
+            <div className="divide-y divide-outline-variant rounded-lg bg-surface-container-low px-6 py-1">
+              {t.landing.faq.map((item, i) => (
+                <details key={item.q} open={i === 0} className="group">
+                  <summary className="focus-ring -mr-2 flex cursor-pointer list-none items-center gap-4 rounded-xs py-4 [&::-webkit-details-marker]:hidden">
+                    <span className="flex-1 text-title-m text-on-surface">{item.q}</span>
+                    <Icon
+                      name="chevronDown"
+                      className="shrink-0 text-on-surface-variant transition-transform group-open:rotate-180"
+                    />
+                  </summary>
+                  <p className="-mt-2 pb-5 text-body-m text-on-surface-variant">{item.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <footer className="mx-auto flex max-w-6xl flex-wrap gap-x-6 gap-y-2 px-4 py-6 text-body-s text-on-surface-variant sm:px-8">
           <span>© 2026 Sophishan</span>
           <Link href="/privacy" className="hover:text-on-surface hover:underline">

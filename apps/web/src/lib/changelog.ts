@@ -64,6 +64,14 @@ export const RELEASES: Release[] = [
           en: "While a project is waiting, its page shows your place in the queue, how many projects are ahead of you, and roughly when it will start.",
         },
       },
+      {
+        kind: "improved",
+        title: { id: "Video yang paling cocok", en: "Videos that work best" },
+        body: {
+          id: "Di bawah kolom link ada petunjuk bahwa hasil terbaik datang dari video yang banyak ngobrol. Halaman depan juga punya tanya jawab soal video yang cocok, kredit, dan lama klip disimpan.",
+          en: "A line under the link field says the best results come from talk-heavy videos. The front page also answers common questions about which videos fit, credits, and how long clips are kept.",
+        },
+      },
     ],
   },
   {
