@@ -2,6 +2,7 @@
 
 import json
 import re
+import subprocess
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -105,7 +106,7 @@ def transcribe_audio(
     lang = None if language in (None, "auto") else language.split("-")[0]
     model = WhisperModel(model_size, device="auto", compute_type="auto")
     segments, info = model.transcribe(
-        str(media_path),
+        load_audio(media_path),
         language=lang,
         multilingual=lang is None,
         word_timestamps=True,
@@ -122,6 +123,28 @@ def transcribe_audio(
             if text:
                 words.append(Word(text, round(w.start, 3), round(w.end, 3)))
     return lang or info.language, words
+
+
+SAMPLE_RATE = 16000  # what Whisper expects
+
+
+def load_audio(media_path: Path):
+    """The file's audio as 16 kHz mono float32 samples, decoded by ffmpeg.
+
+    faster-whisper's own decoder goes through PyAV, whose API changes between
+    releases (one dropped an argument faster-whisper passes, so every
+    transcription failed); the ffmpeg CLI the renderer already needs is stable.
+    """
+    import numpy as np
+
+    proc = subprocess.run(
+        ["ffmpeg", "-nostdin", "-loglevel", "error", "-i", str(media_path),
+         "-vn", "-ac", "1", "-ar", str(SAMPLE_RATE), "-f", "f32le", "-"],
+        capture_output=True,
+    )  # fmt: skip
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg could not read the audio: {proc.stderr[-500:]!r}")
+    return np.frombuffer(proc.stdout, dtype=np.float32)
 
 
 def format_clock(seconds: float) -> str:
