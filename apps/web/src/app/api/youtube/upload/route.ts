@@ -54,37 +54,81 @@ export async function POST(request: Request) {
     return Response.json({ id: published.external_id, url: `https://youtube.com/shorts/${published.external_id}` });
   }
 
-  const { data: post, error: postError } = await supabase
-    .from("clip_posts")
-    .insert({ clip_id: clip.id, user_id: user.id, privacy })
-    .select("id, created_at")
-    .single();
-  if (postError || !post) return Response.json({ code: "failed" }, { status: 500 });
+  const title = cleanTitle(input.title ?? "");
+  const description = cleanDescription(input.description ?? "");
 
-  // Two requests that got past the check above both inserted a row; only the
-  // earliest one uploads. Rows older than the upload time limit are stale.
-  const { data: uploading } = await supabase
+  // A clip waiting in the schedule (or failed there) goes up now from its own
+  // row; the update only succeeds if the cron hasn't just claimed it.
+  const { data: queued } = await supabase
     .from("clip_posts")
-    .select("id, created_at")
+    .select("id")
     .eq("clip_id", clip.id)
-    .eq("status", "uploading")
-    .gte("created_at", new Date(Date.now() - maxDuration * 1000).toISOString());
-  const first = (uploading ?? []).sort(
-    (a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id),
-  )[0];
-  if (first && first.id !== post.id) {
-    await supabase
+    .in("status", ["scheduled", "failed"])
+    .not("scheduled_at", "is", null)
+    .order("status", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  let postId: string;
+  if (queued) {
+    const { data: claimed } = await supabase
       .from("clip_posts")
-      .update({ status: "failed", error: "duplicate request", updated_at: new Date().toISOString() })
-      .eq("id", post.id);
-    return Response.json({ code: "busy" }, { status: 409 });
+      .update({
+        status: "uploading",
+        title,
+        description,
+        privacy,
+        error: null,
+        error_code: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", queued.id)
+      .in("status", ["scheduled", "failed"])
+      .select("id")
+      .maybeSingle();
+    if (!claimed) return Response.json({ code: "busy" }, { status: 409 });
+    postId = claimed.id;
+  } else {
+    const { data: post, error: postError } = await supabase
+      .from("clip_posts")
+      .insert({ clip_id: clip.id, user_id: user.id, privacy, title, description })
+      .select("id, updated_at")
+      .single();
+    if (postError || !post) return Response.json({ code: "failed" }, { status: 500 });
+
+    // Two requests that got past the checks above both have a row uploading;
+    // only the earliest one uploads. Rows older than the upload time limit
+    // are stale.
+    const { data: uploading } = await supabase
+      .from("clip_posts")
+      .select("id, updated_at")
+      .eq("clip_id", clip.id)
+      .eq("status", "uploading")
+      .gte("updated_at", new Date(Date.now() - maxDuration * 1000).toISOString());
+    const first = (uploading ?? []).sort(
+      (a, b) => a.updated_at.localeCompare(b.updated_at) || a.id.localeCompare(b.id),
+    )[0];
+    if (first && first.id !== post.id) {
+      await supabase
+        .from("clip_posts")
+        .update({ status: "failed", error: "duplicate request", updated_at: new Date().toISOString() })
+        .eq("id", post.id);
+      return Response.json({ code: "busy" }, { status: 409 });
+    }
+    postId = post.id;
   }
 
-  const finish = (fields: { status: string; external_id?: string; error?: string }) =>
+  const finish = (fields: {
+    status: string;
+    external_id?: string;
+    published_at?: string;
+    error?: string;
+    error_code?: string;
+  }) =>
     supabase
       .from("clip_posts")
       .update({ ...fields, updated_at: new Date().toISOString() })
-      .eq("id", post.id);
+      .eq("id", postId);
 
   try {
     const token = await accessToken(decryptToken(sealed as string));
@@ -97,18 +141,22 @@ export async function POST(request: Request) {
       token,
       { body: file.body, size },
       {
-        title: cleanTitle(input.title ?? ""),
-        description: cleanDescription(input.description ?? ""),
+        title,
+        description,
         privacy,
       },
     );
-    await finish({ status: "published", external_id: video.id });
+    await finish({ status: "published", external_id: video.id, published_at: new Date().toISOString() });
     if (video.channelTitle) await supabase.rpc("set_youtube_channel_title", { title: video.channelTitle });
     return Response.json({ id: video.id, url: `https://youtube.com/shorts/${video.id}` });
   } catch (e) {
     const code = e instanceof YouTubeError ? e.code : "failed";
     console.error("youtube upload failed", e);
-    await finish({ status: "failed", error: (e instanceof Error ? e.message : String(e)).slice(0, 500) });
+    await finish({
+      status: "failed",
+      error_code: code,
+      error: (e instanceof Error ? e.message : String(e)).slice(0, 500),
+    });
     if (code === "reconnect") await supabase.from("youtube_connections").delete().eq("user_id", user.id);
     return Response.json({ code }, { status: code === "reconnect" ? 409 : 502 });
   }
