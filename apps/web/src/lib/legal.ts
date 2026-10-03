@@ -10,7 +10,7 @@ const GOOGLE_LIMITED_USE = "https://developers.google.com/terms/api-services-use
 
 const privacyEn: LegalDoc = {
   title: "Privacy Policy",
-  updated: "Last updated 29 September 2026",
+  updated: "Last updated 1 October 2026",
   sections: [
     {
       heading: "Who we are",
@@ -31,7 +31,7 @@ const privacyEn: LegalDoc = {
     {
       heading: "How we use it",
       body: [
-        "To run the service: find highlights, render clips, keep your projects and credits, and upload a clip to YouTube only when you press Post and confirm.",
+        "To run the service: find highlights, render clips, keep your projects and credits, and upload a clip to YouTube only when you press Post and confirm, or at the time you scheduled it.",
         "The video transcript is sent to our AI provider to pick highlights and write titles. It is not used to train models on our side.",
         "We do not sell your data or use it for advertising.",
       ],
@@ -41,6 +41,7 @@ const privacyEn: LegalDoc = {
       body: [
         `Posting to YouTube uses the YouTube API Services. By connecting your channel you also agree to the [YouTube Terms of Service](${YT_TERMS}), and the [Google Privacy Policy](${GOOGLE_PRIVACY}) applies to the data Google handles.`,
         "We ask only for permission to upload videos and to see the email address of the account. We cannot read, edit or delete your existing videos.",
+        "For a scheduled post we keep the title, description and visibility you chose and a temporary link to the clip file, until it goes up or you cancel it. To suggest posting times we read the public view count of Shorts you posted through Sophishan, in their first 24 hours.",
         `Our use of information received from Google APIs adheres to the [Google API Services User Data Policy](${GOOGLE_LIMITED_USE}), including the Limited Use requirements.`,
         `You can disconnect YouTube at any time from a project page, which deletes the stored token, or revoke access in your [Google account permissions](${GOOGLE_PERMISSIONS}).`,
       ],
@@ -68,7 +69,7 @@ const privacyEn: LegalDoc = {
 
 const privacyId: LegalDoc = {
   title: "Kebijakan Privasi",
-  updated: "Terakhir diperbarui 29 September 2026",
+  updated: "Terakhir diperbarui 1 Oktober 2026",
   sections: [
     {
       heading: "Tentang kami",
@@ -89,7 +90,7 @@ const privacyId: LegalDoc = {
     {
       heading: "Cara kami memakainya",
       body: [
-        "Untuk menjalankan layanan: mencari momen terbaik, membuat klip, menyimpan proyek dan kredit, dan mengunggah klip ke YouTube hanya saat kamu menekan Post dan mengonfirmasi.",
+        "Untuk menjalankan layanan: mencari momen terbaik, membuat klip, menyimpan proyek dan kredit, dan mengunggah klip ke YouTube hanya saat kamu menekan Post dan mengonfirmasi, atau di jam yang kamu jadwalkan.",
         "Transkrip video dikirim ke penyedia AI kami untuk memilih momen dan menulis judul. Kami tidak memakainya untuk melatih model.",
         "Kami tidak menjual datamu dan tidak memakainya untuk iklan.",
       ],
@@ -99,6 +100,7 @@ const privacyId: LegalDoc = {
       body: [
         `Posting ke YouTube memakai YouTube API Services. Dengan menghubungkan channel, kamu juga menyetujui [Persyaratan Layanan YouTube](${YT_TERMS}), dan [Kebijakan Privasi Google](${GOOGLE_PRIVACY}) berlaku untuk data yang ditangani Google.`,
         "Kami hanya meminta izin untuk mengunggah video dan melihat alamat email akun tersebut. Kami tidak bisa membaca, mengubah, atau menghapus video yang sudah ada.",
+        "Untuk posting terjadwal, kami menyimpan judul, deskripsi, dan visibilitas yang kamu pilih serta link sementara ke file klip, sampai klip diunggah atau jadwalnya kamu batalkan. Untuk menyarankan jam posting, kami membaca jumlah view publik Shorts yang kamu posting lewat Sophishan pada 24 jam pertamanya.",
         `Penggunaan informasi yang kami terima dari Google API mengikuti [Google API Services User Data Policy](${GOOGLE_LIMITED_USE}), termasuk ketentuan Limited Use.`,
         `Kamu bisa memutus YouTube kapan saja dari halaman proyek, yang menghapus token tersimpan, atau mencabut akses lewat [izin akun Google](${GOOGLE_PERMISSIONS}).`,
       ],
