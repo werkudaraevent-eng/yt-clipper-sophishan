@@ -21,6 +21,23 @@ class RenderSettings:
     hook_title: bool = True
 
 
+def describe(settings: RenderSettings, cold_open: bool, teaser: tuple[float, float] | None) -> dict:
+    """What a clip's file was rendered with, as stored on its row (clips.render).
+
+    The teaser's place is kept even with the cold open off, so the editor can
+    turn it back on.
+    """
+    return {
+        "template": settings.template,
+        "position": settings.position,
+        "wordsPerCaption": settings.words_per_caption,
+        "layout": settings.layout,
+        "hookTitle": settings.hook_title,
+        "coldOpen": cold_open,
+        "teaser": [teaser[0], teaser[1]] if teaser else None,
+    }
+
+
 def _escape_filter_path(path: Path) -> str:
     # Inside a filtergraph, ':' and '\' and "'" need escaping.
     return str(path).replace("\\", "/").replace(":", r"\:").replace("'", r"\'")

@@ -77,3 +77,40 @@ class JobOptions(_Model):
     @property
     def clip_length_range(self) -> tuple[float, float] | None:
         return CLIP_LENGTH_RANGES[self.clip_length]
+
+
+class EditWord(_Model):
+    text: str = Field(min_length=1, max_length=80)
+    start: float = Field(ge=0)
+    end: float = Field(ge=0)
+
+
+class EditStyle(_Model):
+    """How a clip looks; a key left out keeps what the clip has now."""
+
+    template: Literal["karaoke", "box", "ali"] | None = None
+    position: Literal["top", "middle", "bottom"] | None = None
+    words_per_caption: int | None = Field(default=None, ge=1, le=6, alias="wordsPerCaption")
+    layout: Literal["auto", "fill", "fit", "square"] | None = None
+    hook_title: bool | None = Field(default=None, alias="hookTitle")
+    cold_open: bool | None = Field(default=None, alias="coldOpen")
+
+
+class ClipEdit(_Model):
+    """One saved edit of a finished clip, mirroring packages/shared/src/clipEdit.ts.
+
+    Only what changed is set. `words` are the captions over the clip's current
+    range, in video seconds; `start`/`end` move the cut.
+    """
+
+    words: list[EditWord] | None = Field(default=None, max_length=3000)
+    hook: str | None = Field(default=None, max_length=120)
+    start: float | None = Field(default=None, ge=0)
+    end: float | None = Field(default=None, gt=0)
+    style: EditStyle | None = None
+
+    @model_validator(mode="after")
+    def _order(self) -> "ClipEdit":
+        if self.start is not None and self.end is not None and self.end - self.start < 3:
+            raise ValueError("a clip runs at least 3 seconds")
+        return self

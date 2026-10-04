@@ -3,7 +3,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from clipper_worker.options import JobOptions
+from clipper_worker.options import ClipEdit, JobOptions
 
 from .conftest import FIXTURES
 
@@ -33,3 +33,18 @@ def test_defaults_match_shared_schema():
     assert o.hook_title is True
     assert o.cold_open is True
     assert o.caption_translation is None
+
+
+EDIT_VALID = json.loads((FIXTURES / "clip-edit.valid.json").read_text())
+EDIT_INVALID = json.loads((FIXTURES / "clip-edit.invalid.json").read_text())
+
+
+@pytest.mark.parametrize("value", EDIT_VALID)
+def test_accepts_valid_clip_edits(value):
+    ClipEdit.model_validate(value)
+
+
+@pytest.mark.parametrize("value", EDIT_INVALID)
+def test_rejects_invalid_clip_edits(value):
+    with pytest.raises(ValidationError):
+        ClipEdit.model_validate(value)
