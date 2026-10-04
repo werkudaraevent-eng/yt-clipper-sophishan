@@ -18,6 +18,23 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-04",
+    title: {
+      id: "Layar terbagi saat beberapa orang bicara",
+      en: "Split screen when several people talk",
+    },
+    items: [
+      {
+        kind: "new",
+        title: { id: "Split 2, 3, atau 4 orang", en: "Split for 2, 3 or 4 people" },
+        body: {
+          id: "Di mode Auto, saat dua orang saling sahut atau beberapa orang ketawa bareng, layar otomatis dibagi supaya semuanya terlihat. Di luar momen itu, crop tetap fokus ke satu orang yang sedang bicara.",
+          en: "In Auto layout, when two people trade lines or a group laughs together, the screen splits so everyone is visible. Otherwise the crop stays on the one person talking.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-10-03",
     title: {
       id: "Jadwalkan posting di jam ramai penontonmu",
