@@ -23,27 +23,46 @@ export function Toggle({
         {label}
         {hint && <span className="block text-body-s text-on-surface-variant">{hint}</span>}
       </label>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={`focus-ring relative h-8 w-13 shrink-0 rounded-full border-2 transition-colors ${
-          checked ? "border-primary bg-primary" : "border-outline bg-surface-container-highest"
+      <Switch id={id} checked={checked} onChange={onChange} />
+    </div>
+  );
+}
+
+/** M3 switch on its own; label it with aria-label or a <label htmlFor>. */
+export function Switch({
+  checked,
+  onChange,
+  id,
+  label,
+  disabled,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  id?: string;
+  label?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`focus-ring relative h-8 w-13 shrink-0 rounded-full border-2 transition-colors disabled:opacity-38 ${
+        checked ? "border-primary bg-primary" : "border-outline bg-surface-container-highest"
+      }`}
+    >
+      <span
+        className={`absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full transition-all ${
+          checked ? "left-[22px] h-6 w-6 bg-on-primary text-primary" : "left-[6px] h-4 w-4 bg-outline"
         }`}
       >
-        <span
-          className={`absolute top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full transition-all ${
-            checked
-              ? "left-[22px] h-6 w-6 bg-on-primary text-primary"
-              : "left-[6px] h-4 w-4 bg-outline"
-          }`}
-        >
-          {checked && <Icon name="check" size={16} />}
-        </span>
-      </button>
-    </div>
+        {checked && <Icon name="check" size={16} />}
+      </span>
+    </button>
   );
 }
 

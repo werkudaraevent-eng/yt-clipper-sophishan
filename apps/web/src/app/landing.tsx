@@ -2,7 +2,9 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { ClipCard, SampleMedia } from "@/components/ClipCard";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { fill } from "@/lib/i18n/dictionaries";
 import { getDictionary } from "@/lib/i18n/server";
+import { getPricingSettings } from "@/lib/pricing";
 
 // Fixed stand-in "video" colours for the sample clips; they are not theme roles.
 const SAMPLE_GRADIENTS = [
@@ -14,14 +16,15 @@ const STEP_ICONS: IconName[] = ["link", "wand", "download"];
 
 /** Signed-out home: what the product does, sample results, and a way in. */
 export async function Landing() {
-  const t = await getDictionary();
+  const [t, pricing] = await Promise.all([getDictionary(), getPricingSettings()]);
+  const free = { n: pricing.signup_credits };
   return (
     <AppShell user={null}>
       <main>
         <section className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 pt-10 pb-16 text-center sm:px-8 sm:pt-16">
           <span className="inline-flex min-h-8 items-center gap-2 rounded-sm bg-secondary-container px-3 py-1 text-label-l text-on-secondary-container">
             <Icon name="wand" size={18} />
-            {t.landing.badge}
+            {fill(t.landing.badge, free)}
           </span>
           <h1 className="max-w-4xl text-display-s text-on-surface sm:text-display-l">
             {t.landing.titleA}
@@ -91,7 +94,7 @@ export async function Landing() {
                 </li>
               ))}
             </ol>
-            <p className="text-center text-body-m text-on-surface-variant">{t.home.freeNote}</p>
+            <p className="text-center text-body-m text-on-surface-variant">{fill(t.home.freeNote, free)}</p>
           </div>
         </section>
 

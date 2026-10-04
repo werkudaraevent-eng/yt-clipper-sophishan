@@ -10,6 +10,7 @@ import { currentIsAdmin, currentUser } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { setRole } from "./actions";
 import { AdjustForm } from "./adjust-form";
+import { PricingForm, type PricingData } from "./pricing-form";
 
 type FoundUser = {
   id: string;
@@ -89,6 +90,8 @@ export default async function AdminPage({
   const [t, locale] = await Promise.all([getDictionary(), getLocale()]);
   const errors = t.admin.errors;
   const team = tab === "team";
+  const pricing = tab === "pricing";
+  const current = team ? "team" : pricing ? "pricing" : "users";
 
   const tabs = (
     <nav role="tablist" aria-label={t.admin.title} className="-mt-2 flex border-b border-outline-variant">
@@ -96,9 +99,10 @@ export default async function AdminPage({
         [
           ["users", "/admin", "person", t.admin.tabs.users],
           ["team", "/admin?tab=team", "admin", t.admin.tabs.team],
+          ["pricing", "/admin?tab=pricing", "toll", t.admin.tabs.pricing],
         ] as const
       ).map(([key, href, icon, label]) => {
-        const active = team === (key === "team");
+        const active = current === key;
         return (
           <Link
             key={key}
@@ -123,6 +127,15 @@ export default async function AdminPage({
       <AppShell user={user} title={t.admin.title}>
         {tabs}
         <TeamTab t={t} added={added} removed={removed} error={error} />
+      </AppShell>
+    );
+  }
+
+  if (pricing) {
+    return (
+      <AppShell user={user} title={t.admin.title}>
+        {tabs}
+        <PricingTab t={t} locale={locale} />
       </AppShell>
     );
   }
@@ -379,4 +392,19 @@ async function TeamTab({
       </section>
     </>
   );
+}
+
+/** Credit packs, discounts, sign-up credits, referrals and promo codes; only the owner can change them. */
+async function PricingTab({ t, locale }: { t: Dictionary; locale: string }) {
+  const supabase = await createClient();
+  const [{ data }, { data: owner }] = await Promise.all([supabase.rpc("admin_pricing"), supabase.rpc("is_owner")]);
+  if (!data) {
+    return (
+      <p role="alert" className="flex gap-2 rounded-md bg-error-container p-3 text-body-m text-on-error-container">
+        <Icon name="error" size={20} className="shrink-0" />
+        {t.admin.pricing.errors.failed}
+      </p>
+    );
+  }
+  return <PricingForm data={data as PricingData} isOwner={owner === true} t={t} locale={locale} />;
 }
