@@ -21,6 +21,8 @@ function label(e: LedgerEntry, t: Dictionary) {
   const r = t.creditsPage.reasons;
   if (e.reason === "signup_grant") return r.signup_grant;
   if (e.reason === "refund_failed") return r.refund_failed;
+  if (e.reason === "referral_reward") return r.referral_reward;
+  if (e.reason === "referral_bonus") return r.referral_bonus;
   if (e.reason === "purchase") return fill(r.purchase, { n: e.delta });
   if (e.reason === "project") return `${r.project}: ${e.project_title ?? t.projects.untitled}`;
   // "admin: <note> (by <uuid>)" from admin_adjust_credits; keep only the note.

@@ -20,10 +20,34 @@ export const RELEASES: Release[] = [
   {
     date: "2026-10-04",
     title: {
-      id: "Layar terbagi saat beberapa orang bicara",
-      en: "Split screen when several people talk",
+      id: "Diskon, kode promo, ajak teman, dan layar terbagi",
+      en: "Discounts, promo codes, invites and split screen",
     },
     items: [
+      {
+        kind: "new",
+        title: { id: "Diskon paket kredit", en: "Credit pack discounts" },
+        body: {
+          id: "Saat ada diskon, halaman Kredit menampilkan harga coret dan sampai kapan diskonnya berlaku.",
+          en: "When a discount runs, the Credits page shows the struck-through price and when the discount ends.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Kode promo", en: "Promo codes" },
+        body: {
+          id: "Punya kode promo? Masukkan di jendela konfirmasi sebelum bayar, harganya langsung terpotong.",
+          en: "Got a promo code? Enter it in the confirm window before you pay and the price drops right away.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Ajak teman, dapat kredit", en: "Invite friends, earn credits" },
+        body: {
+          id: "Bagikan link undanganmu dari halaman Kredit. Saat temanmu membeli kredit pertama kali, kamu dapat kredit gratis.",
+          en: "Share your invite link from the Credits page. When your friend buys credits for the first time, you get free credits.",
+        },
+      },
       {
         kind: "new",
         title: {
@@ -33,6 +57,14 @@ export const RELEASES: Release[] = [
         body: {
           id: "Di mode Auto, saat dua orang saling sahut atau beberapa orang ketawa bareng, layar otomatis dibagi supaya semuanya terlihat. Di luar momen itu, crop tetap fokus ke satu orang yang sedang bicara.",
           en: "In Auto layout, when two people trade lines or a group laughs together, the screen splits so everyone is visible. Otherwise the crop stays on the one person talking.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Antrean prioritas untuk pembeli kredit", en: "Priority queue for credit buyers" },
+        body: {
+          id: "Kalau kamu pernah beli paket kredit, project-mu masuk jalur prioritas dan biasanya mulai jauh lebih cepat saat antrean ramai. Pengguna gratis tetap kebagian giliran: setiap project ketiga diambil dari antrean biasa.",
+          en: "If you've ever bought a credit pack, your projects go in the priority lane and usually start much sooner when the queue is busy. Free users still get their turn: every third project is taken from the regular line.",
         },
       },
       {

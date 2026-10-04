@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import shutil
 import tempfile
 import threading
@@ -65,6 +66,20 @@ def fetch_info(url: str) -> VideoInfo:
         language=info.get("language"),
         raw=info,
     )
+
+
+def vocabulary(info: dict[str, Any], limit: int = 600) -> str:
+    """Names and terms the video is likely to mention: its title, tags and
+    description, minus links. Whisper spells these right when it is told them
+    up front (a player's name instead of a sound-alike)."""
+    parts = [info.get("title") or "", ", ".join(info.get("tags") or [])]
+    for line in (info.get("description") or "").splitlines():
+        line = re.sub(r"\S*https?://\S+|\S+\.(?:com|id|ly|gg|me)/\S*", "", line).strip(" -|:•")
+        if len(line) > 2:
+            parts.append(line)
+    parts = [p.strip() for p in parts if p.strip()]
+    text = " ".join(p if p[-1] in ".!?" else p + "." for p in parts)
+    return text[:limit].rsplit(" ", 1)[0] if len(text) > limit else text
 
 
 def pick_caption_track(info: dict[str, Any], language: str | None) -> tuple[str, str] | None:

@@ -1,12 +1,15 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { BuyCredits } from "@/components/BuyCredits";
+import { InviteCard, type Invite } from "@/components/InviteCard";
 import { LedgerList, type LedgerEntry, type PendingPurchase } from "@/components/LedgerList";
 import { Icon } from "@/components/ui/Icon";
 import { videoTime, type Pack } from "@/lib/credit-packs";
 import { fill } from "@/lib/i18n/dictionaries";
 import { getDictionary, getLocale } from "@/lib/i18n/server";
 import { channelLabel, paymentsEnabled } from "@/lib/payments";
+import { getPricingSettings } from "@/lib/pricing";
 import { currentCredits, currentUser } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,7 +27,8 @@ export default async function CreditsPage() {
   const user = await currentUser();
   if (!user) redirect("/login?next=/credits");
   const supabase = await createClient();
-  const [t, locale, balanceOrNull, { data }, { data: packs }, { data: pending }] = await Promise.all([
+  const [t, locale, balanceOrNull, { data }, { data: packs }, { data: pending }, pricing, { data: referral }, h] =
+    await Promise.all([
     getDictionary(),
     getLocale(),
     currentCredits(user),
@@ -36,7 +40,7 @@ export default async function CreditsPage() {
       .returns<Row[]>(),
     supabase
       .from("credit_packs")
-      .select("id, credits, price_idr, featured")
+      .select("id, credits, price_idr, featured, discount_percent")
       .order("sort_order")
       .returns<Pack[]>(),
     supabase
@@ -47,7 +51,16 @@ export default async function CreditsPage() {
       .order("created_at", { ascending: false })
       .limit(3)
       .returns<PendingPurchase[]>(),
+    getPricingSettings(),
+    supabase.rpc("my_referral"),
+    headers(),
   ]);
+  const invite = (referral as ({ enabled: boolean } & Partial<Invite>) | null)?.enabled
+    ? (referral as Invite)
+    : null;
+  const site =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    `${h.get("x-forwarded-proto") ?? "https"}://${h.get("x-forwarded-host") ?? h.get("host")}`;
   const balance = balanceOrNull ?? 0;
   const low = balance < LOW_BALANCE;
   const entries: LedgerEntry[] = (data ?? []).map(({ projects, credit_orders, ...e }) => ({
@@ -101,7 +114,7 @@ export default async function CreditsPage() {
             </p>
           )}
 
-          <BuyCredits packs={packs ?? []} t={t} locale={locale} />
+          <BuyCredits packs={packs ?? []} discountUntil={pricing.discount_until} t={t} locale={locale} />
 
           <section className="hidden flex-col gap-3 rounded-lg bg-surface-container-low px-6 py-5 md:flex">
             <h2 className="text-title-s text-on-surface">{t.buy.payWith}</h2>
@@ -123,6 +136,7 @@ export default async function CreditsPage() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
+          {invite && <InviteCard invite={invite} link={`${site}/r/${invite.code}`} t={t} />}
           <LedgerList entries={entries} t={t} locale={locale} pending={pending ?? []} />
           {CONTACT && (
             <p className="flex items-start gap-2 rounded-md bg-surface-container px-4 py-3 text-body-s text-on-surface-variant">

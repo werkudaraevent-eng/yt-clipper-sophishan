@@ -120,3 +120,27 @@ def test_load_audio_decodes_with_ffmpeg(tmp_path):
     assert len(samples) / transcript.SAMPLE_RATE == pytest.approx(2.0, abs=0.05)
     first_sound = (abs(samples) > 0.1).argmax() / transcript.SAMPLE_RATE
     assert first_sound == pytest.approx(0.5, abs=0.03)
+
+
+def test_vocabulary_keeps_names_and_drops_links():
+    from clipper_worker.engine import youtube
+
+    info = {
+        "title": "Matheus Cunha Bikin Amorim Pusing?",
+        "tags": ["Manchester United", "Ruben Amorim"],
+        "description": "Bahas MU bareng Coach Justin.\nFollow: https://instagram.com/x\n\nbit.ly/abc",
+    }
+    vocab = youtube.vocabulary(info)
+    assert vocab == (
+        "Matheus Cunha Bikin Amorim Pusing? Manchester United, Ruben Amorim. "
+        "Bahas MU bareng Coach Justin. Follow."
+    )
+    assert "http" not in vocab and "bit.ly" not in vocab
+    assert len(youtube.vocabulary({"title": "kata " * 500}, limit=100)) <= 100
+
+
+def test_vocabulary_reaches_whisper_as_hotwords(monkeypatch):
+    calls: list = []
+    _fake_whisper(monkeypatch, calls)
+    pipeline.transcribe(_source(vocabulary="Matheus Cunha"), _options(), lambda s, p: None)
+    assert calls[1][1]["hotwords"] == "Matheus Cunha"
