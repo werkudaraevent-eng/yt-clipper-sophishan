@@ -301,9 +301,76 @@ def test_crop_falls_back_to_the_largest_face_without_speech():
     assert reframe.plan_speaker_crops([reframe.Sample(0.0, ())], []) == []
 
 
+def test_split_screen_for_a_quick_exchange_and_a_group_laugh():
+    from clipper_worker.engine import split
+
+    def talking(p, t):
+        if t < 6 or t >= 16:
+            return p == 0
+        if t < 12:  # persons 0 and 2 trade lines every 1.2s
+            return p == (0 if int((t - 6) / 1.2) % 2 == 0 else 2)
+        return t >= 13  # everyone laughs
+
+    samples = podcast(talking)
+    words = speech((0, 20))
+    keyframes = reframe.plan_speaker_crops(samples, words)
+    plan = split.plan_layout(samples, words, keyframes, 20.0, 16 / 9)
+    shape = [(len(s.people), round(s.start), round(s.end)) for s in plan]
+    assert shape[0][0] == 1 and shape[-1][0] == 1
+    assert any(n == 2 and 4 <= a <= 9 for n, a, _ in shape)
+    assert any(n == 4 and 12 <= a <= 14 for n, a, _ in shape)
+    assert plan[0].start == 0.0 and plan[-1].end == 20.0
+    assert all(a.end == pytest.approx(b.start) for a, b in zip(plan, plan[1:], strict=False))
+
+
+def test_no_split_for_a_single_interjection_or_neighbours():
+    from clipper_worker.engine import split
+
+    # Person 1 tells the story; person 3 cuts in once for a second.
+    def talking(p, t):
+        return (p == 1 and not 8 <= t < 9) or (p == 3 and 8 <= t < 9)
+
+    samples = podcast(talking)
+    words = speech((0, 20))
+    plan = split.plan_layout(samples, words, reframe.plan_speaker_crops(samples, words), 20, 16 / 9)
+    assert all(len(s.people) == 1 for s in plan)
+
+    # Two neighbours laughing together already fit in one crop.
+    group = (split.Person(0.40, 0.4, 0.2), split.Person(0.50, 0.4, 0.2))
+    assert split._fits_one_crop(group, 16 / 9)
+
+
 # --- render (needs ffmpeg) ------------------------------------------------------
 
 ffmpeg = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
+
+
+@ffmpeg
+def test_split_layout_filter_renders_every_tile_count(tmp_path):
+    from clipper_worker.engine import split
+
+    video = tmp_path / "in.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+         "testsrc2=s=1280x720:r=25:d=8", "-c:v", "libx264", "-preset", "ultrafast",
+         "-pix_fmt", "yuv420p", str(video)],
+        check=True,
+    )  # fmt: skip
+    people = [split.Person(x, 0.4, 0.2) for x in (0.15, 0.4, 0.65, 0.9)]
+    segments = [split.Segment(i * 2.0, i * 2.0 + 2.0, tuple(people[: i + 1])) for i in range(4)]
+    frame = split.layout_filter(segments, 1280, 720)
+    out = tmp_path / "out.mp4"
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(video),
+         "-filter_complex", frame.filter.replace("[in]", "[0:v]"), "-map", "[out]",
+         "-c:v", "libx264", "-preset", "ultrafast", str(out)],
+        check=True,
+    )  # fmt: skip
+    probe = json.loads(subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "stream=width,height:format=duration",
+         "-of", "json", str(out)], check=True, capture_output=True, text=True).stdout)  # fmt: skip
+    assert (probe["streams"][0]["width"], probe["streams"][0]["height"]) == (1080, 1920)
+    assert float(probe["format"]["duration"]) == pytest.approx(8.0, abs=0.1)
 
 
 @ffmpeg
