@@ -70,7 +70,8 @@ export function OrderStatusView({
     setError(null);
     const result = await buyCredits(order.packId);
     if ("url" in result) return window.location.assign(result.url);
-    setError(t.buy.errors[result.error]);
+    // Retrying is without a promo code, so only the plain errors come back.
+    setError(t.buy.errors["error" in result ? result.error : "failed"]);
     setBusy(false);
   }
 

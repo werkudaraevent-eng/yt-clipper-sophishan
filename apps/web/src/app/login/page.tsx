@@ -3,7 +3,9 @@ import Script from "next/script";
 import { LogoMark } from "@/components/AppShell";
 import { Icon } from "@/components/ui/Icon";
 import { googleAuthEnabled, supabaseConfigured, turnstileSiteKey } from "@/lib/env";
+import { fill } from "@/lib/i18n/dictionaries";
 import { getDictionary } from "@/lib/i18n/server";
+import { getPricingSettings } from "@/lib/pricing";
 import { signInWithEmail, signInWithGoogle } from "./actions";
 
 /** Google's "G" in its brand colours, as its sign-in guidelines ask. */
@@ -26,7 +28,7 @@ export default async function LoginPage({
   const { next: nextParam, error, sent, url } = await searchParams;
   // A link pasted on the landing page comes back prefilled after sign-in.
   const next = nextParam ?? (url ? `/?url=${encodeURIComponent(url)}#create` : "/");
-  const t = await getDictionary();
+  const [t, pricing] = await Promise.all([getDictionary(), getPricingSettings()]);
   return (
     <main className="grid min-h-screen lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)]">
       <section className="relative hidden flex-col justify-between overflow-hidden bg-primary p-10 text-on-primary lg:flex">
@@ -42,7 +44,7 @@ export default async function LoginPage({
         <dl className="relative flex gap-10">
           {t.login.stats.map((s) => (
             <div key={s.label}>
-              <dt className="text-headline-s">{s.value}</dt>
+              <dt className="text-headline-s">{fill(s.value, { n: pricing.signup_credits })}</dt>
               <dd className="text-body-s opacity-80">{s.label}</dd>
             </div>
           ))}

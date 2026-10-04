@@ -20,10 +20,34 @@ export const RELEASES: Release[] = [
   {
     date: "2026-10-04",
     title: {
-      id: "Layar terbagi saat beberapa orang bicara",
-      en: "Split screen when several people talk",
+      id: "Diskon, kode promo, ajak teman, dan layar terbagi",
+      en: "Discounts, promo codes, invites and split screen",
     },
     items: [
+      {
+        kind: "new",
+        title: { id: "Diskon paket kredit", en: "Credit pack discounts" },
+        body: {
+          id: "Saat ada diskon, halaman Kredit menampilkan harga coret dan sampai kapan diskonnya berlaku.",
+          en: "When a discount runs, the Credits page shows the struck-through price and when the discount ends.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Kode promo", en: "Promo codes" },
+        body: {
+          id: "Punya kode promo? Masukkan di jendela konfirmasi sebelum bayar, harganya langsung terpotong.",
+          en: "Got a promo code? Enter it in the confirm window before you pay and the price drops right away.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Ajak teman, dapat kredit", en: "Invite friends, earn credits" },
+        body: {
+          id: "Bagikan link undanganmu dari halaman Kredit. Saat temanmu membeli kredit pertama kali, kamu dapat kredit gratis.",
+          en: "Share your invite link from the Credits page. When your friend buys credits for the first time, you get free credits.",
+        },
+      },
       {
         kind: "new",
         title: {

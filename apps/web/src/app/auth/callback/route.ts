@@ -1,5 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { REFERRAL_COOKIE } from "@/lib/pricing";
 import { safeNext } from "@/lib/safe-next";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,12 +18,31 @@ export async function GET(request: Request) {
   // Email links carry a token hash (see supabase/templates). Unlike the PKCE
   // `code`, it does not need a cookie from the browser that asked for the
   // link, so it still works when the mail is opened in another browser.
+  let signedIn = false;
   if (tokenHash && type && EMAIL_OTP_TYPES.has(type)) {
-    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    signedIn = !(await supabase.auth.verifyOtp({ token_hash: tokenHash, type })).error;
   } else if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    signedIn = !(await supabase.auth.exchangeCodeForSession(code)).error;
+  }
+  if (signedIn) {
+    await claimReferral(supabase);
+    return NextResponse.redirect(`${origin}${next}`);
   }
   return NextResponse.redirect(`${origin}/login?error=Sign-in%20link%20expired`);
+}
+
+/**
+ * Link a new account to the friend whose invite link brought it here. The
+ * database only accepts this for an account made in the last day, once.
+ */
+async function claimReferral(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const store = await cookies();
+  const ref = store.get(REFERRAL_COOKIE)?.value;
+  if (!ref) return;
+  try {
+    await supabase.rpc("claim_referral", { p_code: ref });
+  } catch (e) {
+    console.error("claim_referral", e);
+  }
+  store.delete(REFERRAL_COOKIE);
 }

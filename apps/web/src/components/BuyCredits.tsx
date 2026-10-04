@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { buyCredits } from "@/app/credits/actions";
-import { count, packMath, rupiah, videoTime, type Pack } from "@/lib/credit-packs";
+import { buyCredits, quotePromo, type Quote } from "@/app/credits/actions";
+import { count, packMath, rupiah, salePrice, videoTime, type Pack } from "@/lib/credit-packs";
 import { fill, type Dictionary } from "@/lib/i18n/dictionaries";
 import { Segmented } from "./controls";
 import { Icon } from "./ui/Icon";
@@ -20,7 +20,18 @@ const TONAL_M =
  * its own Buy button; phones get a single-choice list with one Buy button in
  * a bar above the navigation bar. Both confirm in a dialog, then go to DOKU.
  */
-export function BuyCredits({ packs, t, locale }: { packs: Pack[]; t: Dictionary; locale: string }) {
+export function BuyCredits({
+  packs,
+  discountUntil,
+  t,
+  locale,
+}: {
+  packs: Pack[];
+  /** When pack discounts end; null while they run until removed. */
+  discountUntil: string | null;
+  t: Dictionary;
+  locale: string;
+}) {
   const [currency, setCurrency] = useState<Currency>("idr");
   const [selected, setSelected] = useState(() => (packs.find((p) => p.featured) ?? packs[0])?.id);
   const [confirming, setConfirming] = useState<Pack | null>(null);
@@ -59,59 +70,12 @@ export function BuyCredits({ packs, t, locale }: { packs: Pack[]; t: Dictionary;
         ) : (
           <>
             {/* Cards: medium and wider windows. */}
-            <ul className="hidden gap-4 pt-3 md:grid md:grid-cols-2 lg:grid-cols-4">
-              {packs.map((p) => {
-                const { perCredit, saving } = packMath(p, packs);
-                return (
-                  <li
-                    key={p.id}
-                    className={`relative flex flex-col gap-4 rounded-lg bg-surface-container-lowest p-5 ${
-                      p.featured ? "border-2 border-primary shadow-elev-2" : "border border-outline-variant"
-                    }`}
-                  >
-                    {p.featured && (
-                      <span className="absolute -top-[13px] left-5 flex items-center gap-1 rounded-sm bg-tertiary-container py-1 pr-2.5 pl-2 text-label-m text-on-tertiary-container">
-                        <Icon name="fire" size={16} />
-                        {t.buy.popular}
-                      </span>
-                    )}
-                    <div className="flex flex-col gap-0.5">
-                      <p className="flex items-baseline gap-1.5">
-                        <span className="text-headline-m text-on-surface tabular-nums">{count(p.credits, locale)}</span>
-                        <span className="text-title-m text-on-surface-variant">{t.buy.credits}</span>
-                      </p>
-                      <p className="text-body-s text-on-surface-variant">{videoTime(p.credits, t)}</p>
-                    </div>
-                    <hr className="border-outline-variant" />
-                    <div className="flex flex-col gap-0.5">
-                      <p className="text-title-l text-on-surface tabular-nums">{rupiah(p.price_idr)}</p>
-                      <div className="flex h-12 flex-col items-start gap-2">
-                        <span className="text-body-s text-on-surface-variant">
-                          {fill(t.buy.perCredit, { price: rupiah(perCredit) })}
-                        </span>
-                        {saving && (
-                          <span className="rounded-sm bg-success-container px-2.5 py-1 text-label-m text-on-success-container">
-                            {fill(t.buy.save, { n: saving })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setConfirming(p)}
-                      className={`${p.featured ? FILLED_M : TONAL_M} mt-auto w-full`}
-                    >
-                      {t.buy.buy}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <PackCards packs={packs} discountUntil={discountUntil} t={t} locale={locale} onBuy={setConfirming} />
 
             {/* Single-choice list: compact windows. */}
             <div role="radiogroup" aria-label={t.buy.title} className="flex flex-col gap-2 md:hidden">
               {packs.map((p) => {
-                const { perCredit, saving } = packMath(p, packs);
+                const { price, perCredit, saving, discount } = packMath(p, packs, discountUntil);
                 const on = p.id === chosen?.id;
                 return (
                   <button
@@ -150,14 +114,25 @@ export function BuyCredits({ packs, t, locale }: { packs: Pack[]; t: Dictionary;
                       </span>
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-0.5">
-                      <span className="text-title-m tabular-nums">{rupiah(p.price_idr)}</span>
-                      {saving ? (
+                      {discount && (
+                        <s className={`text-body-s tabular-nums ${on ? "" : "text-on-surface-variant"}`}>
+                          {rupiah(p.price_idr)}
+                        </s>
+                      )}
+                      <span className="text-title-m tabular-nums">{rupiah(price)}</span>
+                      {discount ? (
+                        <span className="rounded-[6px] bg-success-container px-2 py-0.5 text-label-m text-on-success-container">
+                          {fill(t.buy.discount, { n: discount })}
+                        </span>
+                      ) : saving ? (
                         <span className="rounded-[6px] bg-success-container px-2 py-0.5 text-label-m text-on-success-container">
                           {fill(t.buy.save, { n: saving })}
                         </span>
                       ) : (
                         <span className="text-body-s text-on-surface-variant">
-                          {fill(t.buy.perCreditShort, { price: rupiah(perCredit) })}
+                          {fill(t.buy.perCreditShort, {
+                            price: rupiah(perCredit),
+                          })}
                         </span>
                       )}
                     </span>
@@ -176,7 +151,9 @@ export function BuyCredits({ packs, t, locale }: { packs: Pack[]; t: Dictionary;
               <div className="fixed inset-x-0 bottom-20 z-10 flex items-center gap-3 bg-surface-container px-4 py-3 md:hidden">
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="text-body-s text-on-surface-variant">{t.buy.total}</span>
-                  <span className="text-title-l text-on-surface tabular-nums">{rupiah(chosen.price_idr)}</span>
+                  <span className="text-title-l text-on-surface tabular-nums">
+                    {rupiah(salePrice(chosen, discountUntil))}
+                  </span>
                 </span>
                 <button type="button" onClick={() => setConfirming(chosen)} className={FILLED_M}>
                   {fill(t.buy.buyPack, { n: count(chosen.credits, locale) })}
@@ -188,30 +165,137 @@ export function BuyCredits({ packs, t, locale }: { packs: Pack[]; t: Dictionary;
       </section>
 
       {confirming && (
-        <ConfirmDialog pack={confirming} t={t} locale={locale} onClose={() => setConfirming(null)} />
+        <ConfirmDialog
+          pack={confirming}
+          sale={salePrice(confirming, discountUntil)}
+          t={t}
+          locale={locale}
+          onClose={() => setConfirming(null)}
+        />
       )}
     </>
+  );
+}
+
+/** The row of pack cards on /credits; also the preview on /admin (no onBuy). */
+export function PackCards({
+  packs,
+  discountUntil,
+  t,
+  locale,
+  onBuy,
+  className = "hidden md:grid",
+}: {
+  packs: Pack[];
+  discountUntil: string | null;
+  t: Dictionary;
+  locale: string;
+  onBuy?: (pack: Pack) => void;
+  className?: string;
+}) {
+  const untilLabel = discountUntil
+    ? fill(t.buy.until, {
+        date: new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
+          day: "numeric",
+          month: "short",
+        }).format(new Date(discountUntil)),
+      })
+    : null;
+  return (
+    <ul className={`gap-4 pt-3 md:grid-cols-2 lg:grid-cols-4 ${className}`}>
+      {packs.map((p) => {
+        const { price, perCredit, saving, discount } = packMath(p, packs, discountUntil);
+        return (
+          <li
+            key={p.id}
+            className={`relative flex flex-col gap-4 rounded-lg bg-surface-container-lowest p-5 ${
+              p.featured ? "border-2 border-primary shadow-elev-2" : "border border-outline-variant"
+            }`}
+          >
+            {p.featured && (
+              <span className="absolute -top-[13px] left-5 flex items-center gap-1 rounded-sm bg-tertiary-container py-1 pr-2.5 pl-2 text-label-m text-on-tertiary-container">
+                <Icon name="fire" size={16} />
+                {t.buy.popular}
+              </span>
+            )}
+            <div className="flex flex-col gap-0.5">
+              <p className="flex items-baseline gap-1.5">
+                <span className="text-headline-m text-on-surface tabular-nums">{count(p.credits, locale)}</span>
+                <span className="text-title-m text-on-surface-variant">{t.buy.credits}</span>
+              </p>
+              <p className="text-body-s text-on-surface-variant">{videoTime(p.credits, t)}</p>
+            </div>
+            <hr className="border-outline-variant" />
+            <div className="flex flex-col gap-0.5">
+              {discount && (
+                <p className="text-body-s text-on-surface-variant">
+                  <s className="tabular-nums">{rupiah(p.price_idr)}</s>
+                  {untilLabel && ` · ${untilLabel}`}
+                </p>
+              )}
+              <p className={`text-title-l tabular-nums ${discount ? "text-primary" : "text-on-surface"}`}>
+                {rupiah(price)}
+              </p>
+              <div className="flex h-12 flex-col items-start gap-2">
+                <span className="text-body-s text-on-surface-variant">
+                  {fill(t.buy.perCredit, { price: rupiah(perCredit) })}
+                </span>
+                {discount ? (
+                  <span className="rounded-sm bg-success-container px-2.5 py-1 text-label-m text-on-success-container">
+                    {fill(t.buy.discount, { n: discount })}
+                  </span>
+                ) : (
+                  saving && (
+                    <span className="rounded-sm bg-success-container px-2.5 py-1 text-label-m text-on-success-container">
+                      {fill(t.buy.save, { n: saving })}
+                    </span>
+                  )
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onBuy?.(p)}
+              tabIndex={onBuy ? undefined : -1}
+              className={`${p.featured ? FILLED_M : TONAL_M} mt-auto w-full`}
+            >
+              {t.buy.buy}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
 /** M3 basic dialog with a hero icon: the last look before leaving for DOKU. */
 function ConfirmDialog({
   pack,
+  sale,
   t,
   locale,
   onClose,
 }: {
   pack: Pack;
+  /** The pack's price now, after its own discount. */
+  sale: number;
   t: Dictionary;
   locale: string;
   onClose: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [checking, setChecking] = useState(false);
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const total = quote?.promo_applied ? quote.amount : sale;
   const confirmRef = useRef<HTMLButtonElement>(null);
   const validUntil = new Date();
   validUntil.setFullYear(validUntil.getFullYear() + 1);
-  const date = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", { dateStyle: "medium" }).format(validUntil);
+  const date = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
+    dateStyle: "medium",
+  }).format(validUntil);
 
   useEffect(() => {
     confirmRef.current?.focus();
@@ -220,16 +304,32 @@ function ConfirmDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [busy, onClose]);
 
+  async function applyCode() {
+    if (!code.trim() || checking) return;
+    setChecking(true);
+    setPromoError(null);
+    const result = await quotePromo(pack.id, code);
+    setChecking(false);
+    if ("quote" in result) setQuote(result.quote);
+    else {
+      setQuote(null);
+      setPromoError(t.buy.promoErrors[result.error]);
+    }
+  }
+
   async function go() {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const result = await buyCredits(pack.id);
+    const result = await buyCredits(pack.id, quote?.promo_applied ? quote.promo_code : null);
     if ("url" in result) {
       window.location.assign(result.url);
       return;
     }
-    setError(t.buy.errors[result.error]);
+    if ("promoError" in result) {
+      setQuote(null);
+      setPromoError(t.buy.promoErrors[result.promoError]);
+    } else setError(t.buy.errors[result.error]);
     setBusy(false);
   }
 
@@ -249,6 +349,55 @@ function ConfirmDialog({
           {fill(t.buy.confirmTitle, { n: count(pack.credits, locale) })}
         </h2>
         <p className="text-body-m text-on-surface-variant">{t.buy.confirmBody}</p>
+        <div className="flex w-full flex-col gap-1.5 text-left">
+          <div className="relative">
+            <input
+              id="promo-code"
+              value={code}
+              onChange={(e) => {
+                setCode(e.target.value.toUpperCase());
+                setQuote(null);
+                setPromoError(null);
+              }}
+              onKeyDown={(e) => e.key === "Enter" && applyCode()}
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={24}
+              className="input h-14 pr-24 uppercase"
+            />
+            <label
+              htmlFor="promo-code"
+              className="pointer-events-none absolute -top-2 left-3 bg-surface-container-high px-1 text-body-s text-on-surface-variant"
+            >
+              {t.buy.promoLabel}
+            </label>
+            <button
+              type="button"
+              onClick={applyCode}
+              disabled={!code.trim() || checking}
+              className="state-layer focus-ring absolute top-2 right-2 inline-flex h-10 items-center rounded-full px-3 text-label-l text-primary disabled:text-on-surface/38"
+            >
+              {t.buy.promoApply}
+            </button>
+          </div>
+          {quote && (
+            <p className="flex items-center gap-1.5 text-body-s text-primary">
+              <Icon name="checkCircle" size={16} className="shrink-0" />
+              {quote.promo_applied
+                ? fill(t.buy.promoApplied, {
+                    code: quote.promo_code ?? "",
+                    amount: rupiah(pack.price_idr - quote.amount),
+                  })
+                : fill(t.buy.promoNotBetter, { code: quote.promo_code ?? "" })}
+            </p>
+          )}
+          {promoError && (
+            <p role="alert" className="flex items-center gap-1.5 text-body-s text-error">
+              <Icon name="error" size={16} className="shrink-0" />
+              {promoError}
+            </p>
+          )}
+        </div>
         <dl className="w-full rounded-md bg-surface-container-low px-4 py-1 text-left">
           <div className="flex items-center gap-3 py-2.5">
             <dt className="flex-1 text-body-m text-on-surface-variant">{t.buy.pack}</dt>
@@ -260,9 +409,25 @@ function ConfirmDialog({
             <dt className="flex-1 text-body-m text-on-surface-variant">{t.buy.validUntil}</dt>
             <dd className="text-title-s text-on-surface">{date}</dd>
           </div>
+          {sale < pack.price_idr && !quote?.promo_applied && (
+            <div className="flex items-center gap-3 py-2.5">
+              <dt className="flex-1 text-body-m text-on-surface-variant">
+                {fill(t.buy.discount, { n: pack.discount_percent })}
+              </dt>
+              <dd className="text-title-s text-primary tabular-nums">−{rupiah(pack.price_idr - sale)}</dd>
+            </div>
+          )}
+          {quote?.promo_applied && (
+            <div className="flex items-center gap-3 py-2.5">
+              <dt className="flex-1 text-body-m text-on-surface-variant">
+                {fill(t.buy.promoRow, { code: quote.promo_code ?? "" })}
+              </dt>
+              <dd className="text-title-s text-primary tabular-nums">−{rupiah(pack.price_idr - quote.amount)}</dd>
+            </div>
+          )}
           <div className="flex items-center gap-3 py-2.5">
             <dt className="flex-1 text-body-m text-on-surface-variant">{t.buy.total}</dt>
-            <dd className="text-title-m text-on-surface tabular-nums">{rupiah(pack.price_idr)}</dd>
+            <dd className="text-title-m text-on-surface tabular-nums">{rupiah(total)}</dd>
           </div>
         </dl>
         {error && (
