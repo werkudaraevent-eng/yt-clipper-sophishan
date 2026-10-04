@@ -4,30 +4,38 @@ import type { CaptionTemplate } from "@clipper/shared";
 import { useDictionary } from "@/lib/i18n/client";
 import { Icon } from "./ui/Icon";
 
-const PREVIEWS: Record<CaptionTemplate, { name: string; render: () => React.ReactNode }> = {
+type Sample = [string, string, string];
+
+const DEFAULT_SAMPLES: Record<CaptionTemplate, Sample> = {
+  karaoke: ["and", "the", "problem"],
+  box: ["big", "step", "changes"],
+  ali: ["the", "same", "way"],
+};
+
+const PREVIEWS: Record<CaptionTemplate, { name: string; render: (s: Sample, size: string) => React.ReactNode }> = {
   karaoke: {
     name: "Karaoke",
-    render: () => (
-      <span className="text-center text-[11px] leading-tight font-black text-white uppercase [text-shadow:0_0_3px_#000,0_0_3px_#000]">
-        and <span className="text-[#39FF14]">the</span>
+    render: ([a, b, c], size) => (
+      <span className={`text-center ${size} leading-tight font-black text-white uppercase [text-shadow:0_0_3px_#000,0_0_3px_#000]`}>
+        {a} <span className="text-[#39FF14]">{b}</span>
         <br />
-        problem
+        {c}
       </span>
     ),
   },
   box: {
     name: "Box",
-    render: () => (
-      <span className="text-[11px] font-black text-white uppercase [text-shadow:0_0_2px_#000]">
-        big step <span className="bg-[#E0245E] px-0.5">changes</span>
+    render: ([a, b], size) => (
+      <span className={`${size} font-black text-white uppercase [text-shadow:0_0_2px_#000]`}>
+        {a} <span className="bg-[#E0245E] px-0.5">{b}</span>
       </span>
     ),
   },
   ali: {
     name: "Ali",
-    render: () => (
-      <span className="bg-white px-1 text-[11px] font-semibold text-slate-900">
-        the <span className="text-slate-400">same way</span>
+    render: ([a, b, c], size) => (
+      <span className={`bg-white px-1 ${size} font-semibold text-slate-900`}>
+        {a} <span className="text-slate-400">{b} {c}</span>
       </span>
     ),
   },
@@ -36,9 +44,12 @@ const PREVIEWS: Record<CaptionTemplate, { name: string; render: () => React.Reac
 export function TemplatePicker({
   value,
   onChange,
+  sample,
 }: {
   value: CaptionTemplate;
   onChange: (value: CaptionTemplate) => void;
+  /** Three words of the clip to preview each template with, shown larger. */
+  sample?: Sample;
 }) {
   const t = useDictionary();
   return (
@@ -59,8 +70,10 @@ export function TemplatePicker({
             }`}
           >
             {/* Fixed dark backdrop: it stands in for video, so it does not follow the theme. */}
-            <span className="flex h-16 w-full items-center justify-center rounded-sm bg-[#1f1d24] px-1 sm:h-20">
-              {PREVIEWS[key].render()}
+            <span
+              className={`flex w-full items-center justify-center rounded-sm bg-[#1f1d24] px-1 ${sample ? "h-20" : "h-16 sm:h-20"}`}
+            >
+              {PREVIEWS[key].render(sample ?? DEFAULT_SAMPLES[key], sample ? "text-sm" : "text-[11px]")}
             </span>
             <span className="flex items-center gap-1 px-1 text-label-l">
               {selected && <Icon name="checkCircle" size={16} className="shrink-0 text-primary" />}

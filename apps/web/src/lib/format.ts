@@ -8,6 +8,21 @@ export function clock(seconds: number): string {
   return `${String(h).padStart(2, "0")}:${mm}:${ss}`;
 }
 
+/** "0:42", "12:04" or "1:02:03": a clip length or a moment in a video. */
+export function shortClock(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = String(s % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${r}` : `${m}:${r}`;
+}
+
+/** "12:02,0" (Indonesian) or "12:02.0": a moment to the tenth of a second. */
+export function tenths(seconds: number, locale: string): string {
+  const d = Math.max(0, Math.round(seconds * 10));
+  return `${shortClock(Math.floor(d / 10))}${locale === "id" ? "," : "."}${d % 10}`;
+}
+
 /** Most users are in Indonesia and pages render on a UTC server, so times use WIB. */
 export const TIME_ZONE = "Asia/Jakarta";
 

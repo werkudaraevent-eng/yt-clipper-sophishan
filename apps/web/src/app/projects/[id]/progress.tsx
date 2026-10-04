@@ -84,6 +84,7 @@ export function Progress({
           .from("jobs")
           .select("stage, progress, status, attempt, max_attempts, error, created_at, locked_at")
           .eq("project_id", projectId)
+          .eq("kind", "process_project")
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle(),

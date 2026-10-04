@@ -2,7 +2,8 @@ import { Icon } from "./ui/Icon";
 
 /**
  * A 9:16 clip on an M3 outlined card: media with the virality score and
- * length on top, then title, hook, source range and the download action.
+ * length on top, then title, hook, source range and the download action,
+ * with the edit button beside it.
  */
 export function ClipCard({
   media,
@@ -13,6 +14,10 @@ export function ClipCard({
   range,
   downloadHref,
   downloadLabel,
+  edit,
+  overlay,
+  edited,
+  note,
   actions,
   className = "",
 }: {
@@ -24,6 +29,14 @@ export function ClipCard({
   range: string;
   downloadHref?: string;
   downloadLabel: string;
+  /** Icon button beside the download, to edit the clip. */
+  edit?: React.ReactNode;
+  /** Laid over the media, e.g. while an edit renders. */
+  overlay?: React.ReactNode;
+  /** "Edited" after the range, once the clip has been edited. */
+  edited?: string;
+  /** A line under the range, e.g. that the last edit failed. */
+  note?: string;
   /** Extra buttons under the download, e.g. posting to YouTube. */
   actions?: React.ReactNode;
   className?: string;
@@ -45,26 +58,40 @@ export function ClipCard({
             {length}
           </span>
         )}
+        {overlay}
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h3 className="line-clamp-2 text-title-s text-on-surface">{title}</h3>
         {hook && <p className="line-clamp-2 text-body-s text-on-surface-variant">“{hook}”</p>}
-        <p className="mt-1 flex items-center gap-1 text-body-s text-on-surface-variant tabular-nums">
+        <p className="mt-1 flex flex-wrap items-center gap-1 text-body-s text-on-surface-variant tabular-nums">
           <Icon name="schedule" size={14} />
           {range}
-        </p>
-        <div className="mt-auto flex flex-col gap-2 pt-3">
-          {downloadHref ? (
-            <a href={downloadHref} className="btn-primary w-full">
-              <Icon name="download" size={18} />
-              {downloadLabel}
-            </a>
-          ) : (
-            <button type="button" className="btn-primary w-full" disabled>
-              <Icon name="download" size={18} />
-              {downloadLabel}
-            </button>
+          {edited && (
+            <>
+              <span aria-hidden>·</span>
+              <span className="inline-flex items-center gap-0.5 text-label-m text-primary">
+                <Icon name="edit" size={14} />
+                {edited}
+              </span>
+            </>
           )}
+        </p>
+        {note && <p className="text-body-s text-error">{note}</p>}
+        <div className="mt-auto flex flex-col gap-2 pt-3">
+          <div className="flex items-center gap-1">
+            {downloadHref ? (
+              <a href={downloadHref} className="btn-primary min-w-0 flex-1">
+                <Icon name="download" size={18} />
+                {downloadLabel}
+              </a>
+            ) : (
+              <button type="button" className="btn-primary min-w-0 flex-1" disabled>
+                <Icon name="download" size={18} />
+                {downloadLabel}
+              </button>
+            )}
+            {edit}
+          </div>
           {actions}
         </div>
       </div>

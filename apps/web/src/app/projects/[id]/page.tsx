@@ -25,6 +25,7 @@ import { createClient } from "@/lib/supabase/server";
 import { disconnectYouTube } from "@/lib/youtube-actions";
 import { youtubePostingEnabled } from "@/lib/youtube-upload";
 import { Progress } from "./progress";
+import { EditClipButton, type Rerender, RerenderOverlay, RerenderWatch } from "./rerenders";
 
 const SIGNED_URL_SECONDS = 60 * 60;
 
@@ -39,6 +40,7 @@ type Clip = {
   virality_score: number | null;
   video_path: string | null;
   thumbnail_path: string | null;
+  edited_at: string | null;
 };
 
 const SORTS = ["score", "order", "shortest"] as const;
@@ -87,6 +89,7 @@ export default async function ProjectPage({
       .from("jobs")
       .select("stage, progress, status, attempt, max_attempts, error, created_at, locked_at")
       .eq("project_id", id)
+      .eq("kind", "process_project")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -181,6 +184,26 @@ export default async function ProjectPage({
   }
 
   const sorted = sortClips(clips ?? [], sort);
+
+  // Clip edits: the ones still rendering, and clips whose last edit failed.
+  const { data: rerenderJobs } = sorted.length
+    ? await supabase
+        .from("jobs")
+        .select("clip_id, status, progress, finished_at")
+        .eq("project_id", id)
+        .eq("kind", "rerender_clip")
+        .order("created_at", { ascending: false })
+        .limit(200)
+    : { data: [] };
+  const lastEdit = new Map<string, NonNullable<typeof rerenderJobs>[number]>();
+  for (const j of rerenderJobs ?? []) if (j.clip_id && !lastEdit.has(j.clip_id)) lastEdit.set(j.clip_id, j);
+  const rerendering: Rerender[] = [...lastEdit.values()]
+    .filter((j) => j.status === "queued" || j.status === "running")
+    .map((j) => ({ clipId: j.clip_id!, progress: j.progress }));
+  const editFailed = (c: Clip) => {
+    const j = lastEdit.get(c.id);
+    return j?.status === "failed" && (!c.edited_at || (j.finished_at ?? "") > c.edited_at);
+  };
 
   // YouTube posting: the connected channel, and each clip's Short or place in the schedule.
   let youtube: { google_email: string | null; channel_title: string | null } | null = null;
@@ -390,63 +413,73 @@ export default async function ProjectPage({
                 </span>
               </div>
             </HideWhileSelecting>
-            <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] md:gap-6">
-              {sorted.map((c) => {
-                const video = c.video_path ? signed.get(c.video_path) : undefined;
-                const thumb = c.thumbnail_path ? signed.get(c.thumbnail_path) : undefined;
-                return (
-                  <li key={c.id}>
-                    <SelectableClip id={c.id} title={clipTitle(c)}>
-                      <ClipCard
-                        className="h-full"
-                        media={
-                          video ? (
-                            <video
-                              src={video}
-                              poster={thumb}
-                              controls
-                              preload="metadata"
-                              className="h-full w-full object-contain"
-                            />
-                          ) : (
-                            <div className="flex h-full items-center justify-center p-4 text-center text-body-s text-white/70">
-                              {t.project.notUploaded}
-                            </div>
-                          )
-                        }
-                        score={c.virality_score}
-                        length={length(c.end_seconds - c.start_seconds)}
-                        title={clipTitle(c)}
-                        hook={c.hook_text}
-                        range={`${clock(c.start_seconds)} – ${clock(c.end_seconds)}`}
-                        downloadHref={video ? `${video}&download=clip-${c.position + 1}.mp4` : undefined}
-                        downloadLabel={t.project.download}
-                        actions={
-                          youtube && video ? (
-                            <PostToYouTube
-                              clipId={c.id}
-                              defaultTitle={postDefaults(c).title}
-                              defaultDescription={postDefaults(c).description}
-                              postedUrl={postedUrls.get(c.id)}
-                              queued={queuedPosts.get(c.id)}
-                              scheduling={
-                                scheduling && {
-                                  map: scheduling.map,
-                                  taken: scheduling.queued.filter((q) => q.clipId !== c.id).map((q) => q.at),
-                                  until,
+            <RerenderWatch projectId={project.id} initial={rerendering}>
+              <ul className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-[repeat(auto-fill,minmax(260px,1fr))] md:gap-6">
+                {sorted.map((c) => {
+                  const video = c.video_path ? signed.get(c.video_path) : undefined;
+                  const thumb = c.thumbnail_path ? signed.get(c.thumbnail_path) : undefined;
+                  return (
+                    <li key={c.id}>
+                      <SelectableClip id={c.id} title={clipTitle(c)}>
+                        <ClipCard
+                          className="h-full"
+                          media={
+                            video ? (
+                              <video
+                                src={video}
+                                poster={thumb}
+                                controls
+                                preload="metadata"
+                                className="h-full w-full object-contain"
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center p-4 text-center text-body-s text-white/70">
+                                {t.project.notUploaded}
+                              </div>
+                            )
+                          }
+                          score={c.virality_score}
+                          length={length(c.end_seconds - c.start_seconds)}
+                          title={clipTitle(c)}
+                          hook={c.hook_text}
+                          range={`${clock(c.start_seconds)} – ${clock(c.end_seconds)}`}
+                          downloadHref={video ? `${video}&download=clip-${c.position + 1}.mp4` : undefined}
+                          downloadLabel={t.project.download}
+                          edit={
+                            status === "ready" ? (
+                              <EditClipButton clipId={c.id} href={`${projectPath}/clips/${c.id}`} />
+                            ) : undefined
+                          }
+                          overlay={<RerenderOverlay clipId={c.id} />}
+                          edited={c.edited_at ? t.editor.edited : undefined}
+                          note={editFailed(c) ? t.editor.renderFailed : undefined}
+                          actions={
+                            youtube && video ? (
+                              <PostToYouTube
+                                clipId={c.id}
+                                defaultTitle={postDefaults(c).title}
+                                defaultDescription={postDefaults(c).description}
+                                postedUrl={postedUrls.get(c.id)}
+                                queued={queuedPosts.get(c.id)}
+                                scheduling={
+                                  scheduling && {
+                                    map: scheduling.map,
+                                    taken: scheduling.queued.filter((q) => q.clipId !== c.id).map((q) => q.at),
+                                    until,
+                                  }
                                 }
-                              }
-                              labels={t.youtube}
-                              locale={locale}
-                            />
-                          ) : undefined
-                        }
-                      />
-                    </SelectableClip>
-                  </li>
-                );
-              })}
-            </ul>
+                                labels={t.youtube}
+                                locale={locale}
+                              />
+                            ) : undefined
+                          }
+                        />
+                      </SelectableClip>
+                    </li>
+                  );
+                })}
+              </ul>
+            </RerenderWatch>
           </>
         )}
       </BulkSchedule>
