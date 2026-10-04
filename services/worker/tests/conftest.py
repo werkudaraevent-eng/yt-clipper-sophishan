@@ -46,7 +46,7 @@ def database_url():
 def conn(database_url):
     with psycopg.connect(database_url, autocommit=True, row_factory=dict_row) as c:
         yield c
-        c.execute("truncate auth.users, public.credit_ledger cascade")
+        c.execute("truncate auth.users, public.credit_ledger, private.signup_grants cascade")
 
 
 @pytest.fixture
