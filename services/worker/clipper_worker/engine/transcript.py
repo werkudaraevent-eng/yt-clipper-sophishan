@@ -88,11 +88,14 @@ def transcribe_audio(
     language: str | None,
     model_size: str,
     on_progress: Callable[[float], None] | None = None,
+    hint_words: str | None = None,
 ) -> tuple[str | None, list[Word]]:
     """(spoken language, word timings) from faster-whisper (optional `asr` extra).
 
     Timings come from the audio itself, so captions land on the words as
     they are said. With no language given, it is detected per segment.
+    `hint_words` (names, terms) are given to Whisper with every 30 s window
+    so it spells them as written there.
     `on_progress` gets the transcribed fraction of the audio, 0..1.
     """
     try:
@@ -111,6 +114,7 @@ def transcribe_audio(
         multilingual=lang is None,
         word_timestamps=True,
         vad_filter=True,
+        hotwords=hint_words or None,
         # Stops one misheard line from repeating through the rest of the audio.
         condition_on_previous_text=False,
     )
