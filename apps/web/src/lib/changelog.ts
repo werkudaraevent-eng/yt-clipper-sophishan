@@ -20,10 +20,34 @@ export const RELEASES: Release[] = [
   {
     date: "2026-10-04",
     title: {
-      id: "Diskon, kode promo, ajak teman, dan layar terbagi",
-      en: "Discounts, promo codes, invites and split screen",
+      id: "Edit klip, diskon, kode promo, dan ajak teman",
+      en: "Clip editor, discounts, promo codes and invites",
     },
     items: [
+      {
+        kind: "new",
+        title: { id: "Perbaiki caption sebelum diunduh", en: "Fix captions before you download" },
+        body: {
+          id: "Tekan tombol pensil di kartu klip untuk mengubah judul hook dan teks caption, atau mengganti nama yang salah tulis di semua caption sekaligus. Klip dirender ulang sekitar 1–2 menit, gratis untuk semua akun.",
+          en: "Tap the pencil on a clip card to change the hook title and caption text, or fix a misspelled name in every caption at once. The clip renders again in about 1–2 minutes, free for every account.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Potong ulang dan ganti gaya", en: "Re-cut and restyle" },
+        body: {
+          id: "Pembeli paket kredit bisa menggeser awal dan akhir klip sampai 30 detik, menyalakan atau mematikan teaser pembuka, dan mengganti template caption, posisi, serta layout setelah klip jadi.",
+          en: "Credit buyers can move a clip's start and end by up to 30 seconds, turn the opening teaser on or off, and change the caption template, position and layout after the clip is made.",
+        },
+      },
+      {
+        kind: "new",
+        title: { id: "Kamus nama", en: "Name dictionary" },
+        body: {
+          id: "Pembeli paket kredit bisa menyimpan nama yang sering salah ditulis, misalnya “Mateus Kunya” jadi “Matheus Cunha”. Caption video berikutnya langsung memakai penulisan yang benar.",
+          en: "Credit buyers can save names that often come out wrong, like “Mateus Kunya” for “Matheus Cunha”. Captions on their next videos use the right spelling.",
+        },
+      },
       {
         kind: "new",
         title: { id: "Diskon paket kredit", en: "Credit pack discounts" },

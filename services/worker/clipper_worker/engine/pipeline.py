@@ -4,7 +4,7 @@ import json
 import logging
 import os
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
@@ -17,8 +17,8 @@ from .highlights import (
     Highlighter,
     find_highlights,
 )
-from .render import RenderSettings, render_clip
-from .transcript import Word, load_words, slice_words, transcribe_audio
+from .render import RenderSettings, describe, render_clip
+from .transcript import Word, apply_terms, load_words, slice_words, transcribe_audio
 from .translate import translate_words
 
 log = logging.getLogger("clipper_worker.pipeline")
@@ -79,6 +79,7 @@ class RenderedClip:
     video_path: Path
     thumbnail_path: Path
     words: list[Word] = field(default_factory=list)
+    render: dict | None = None  # see render.describe
 
 
 @dataclass
@@ -184,6 +185,15 @@ def default_highlighter(source: Source, options: JobOptions) -> Highlighter:
     raise RuntimeError("Set ANTHROPIC_API_KEY, or CLIPPER_LLM_BASE_URL for a gateway")
 
 
+def with_terms(vocabulary: str | None, terms: Sequence[tuple[str, str]], limit: int = 300) -> str:
+    """The Whisper hint plus the user's dictionary spellings. They go last:
+    Whisper keeps the end of an overlong hint."""
+    spelled = ", ".join(dict.fromkeys(correct for _, correct in terms))
+    if len(spelled) > limit:
+        spelled = spelled[:limit].rsplit(",", 1)[0]
+    return " ".join(p for p in (vocabulary, spelled + "." if spelled else "") if p)
+
+
 def run(
     options: JobOptions,
     report: ProgressFn,
@@ -191,14 +201,19 @@ def run(
     *,
     source: Source | None = None,
     highlighter: Highlighter | None = None,
+    terms: Sequence[tuple[str, str]] = (),
 ) -> PipelineResult:
+    """`terms` is the owner's name dictionary: (wrong, correct) spellings."""
     work.mkdir(parents=True, exist_ok=True)
     if source is None:
         source = fetch_youtube(options, work, report)
+    if terms:
+        source.vocabulary = with_terms(source.vocabulary, terms)
 
     report("transcribe", 0.25)
     if not source.words or source.transcribe:
         transcribe(source, options, report)
+    source.words = apply_terms(source.words, terms)
     if not source.words:
         raise RuntimeError("No speech found in the selected timeframe")
 
@@ -223,9 +238,6 @@ def run(
         log=log.info,
     )
 
-    if not options.cold_open:
-        highlights = [replace(h, teaser=None) for h in highlights]
-
     settings = RenderSettings(
         layout=options.layout,
         captions=options.captions.enabled,
@@ -245,10 +257,13 @@ def run(
         words = slice_words(source.words, h.start, h.end)
         if translate_to and options.captions.enabled:
             words = translate_words(highlighter, words, translate_to, log=log.info)
+        # With the cold open off the teaser is still kept on the row, unplayed.
+        played = h if options.cold_open else replace(h, teaser=None)
         video, thumb = render_clip(
-            source.path, source.offset, h, words, settings, work, f"clip-{i + 1:02d}"
+            source.path, source.offset, played, words, settings, work, f"clip-{i + 1:02d}"
         )
-        clips.append(RenderedClip(i, h, video, thumb, words))
+        look = describe(settings, options.cold_open, h.teaser)
+        clips.append(RenderedClip(i, h, video, thumb, words, look))
     report("render", 1.0)
 
     result = PipelineResult(source, clips)

@@ -10,9 +10,9 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from .engine import pipeline
+from .engine import pipeline, rerender
 from .notify import Mailer, notify_owner
-from .options import JobOptions
+from .options import ClipEdit, JobOptions
 from .queue import Job, JobQueue
 from .storage import ClipStorage
 
@@ -50,13 +50,17 @@ def process(
     mailer: Mailer | None = None,
 ) -> None:
     log.info("job %s: attempt %d/%d", job.id, job.attempt, job.max_attempts)
+    if job.kind == "rerender_clip":
+        process_edit(queue, job, work_root=work_root, storage=storage)
+        return
     work = work_root / str(job.project_id)
     try:
         options = paid_window(JobOptions.model_validate(job.options), job.credits_charged)
         # A retry starts clean so half-written files from the last attempt
         # cannot end up in the results.
         shutil.rmtree(work, ignore_errors=True)
-        result = run(options, lambda stage, p: queue.progress(job, stage, p), work)
+        terms = queue.terms(job.user_id)
+        result = run(options, lambda stage, p: queue.progress(job, stage, p), work, terms=terms)
         paths: dict[Path, str] = {}
         if storage is not None:
             queue.progress(job, "upload", 1.0)
@@ -82,6 +86,61 @@ def process(
         notify_owner(queue, job.project_id, mailer, storage)
     except Exception:  # noqa: BLE001 - the email must never fail the job
         log.exception("job %s: done email failed", job.id)
+
+
+def process_edit(
+    queue: JobQueue,
+    job: Job,
+    run=rerender.rerender,
+    work_root: Path = WORK_ROOT,
+    storage: ClipStorage | None = None,
+) -> None:
+    """Render one clip again with its owner's edit and replace its files."""
+    work = work_root / f"edit-{job.clip_id}"
+    try:
+        options = JobOptions.model_validate(job.options)
+        edit = ClipEdit.model_validate(job.payload or {})
+        clip = queue.load_clip(job.clip_id) if job.clip_id else None
+        if clip is None:
+            queue.give_up(job, "clip not found")
+            return
+        shutil.rmtree(work, ignore_errors=True)
+        work.mkdir(parents=True)
+
+        def current_video() -> Path | None:
+            path = clip.video_path
+            if not path:
+                return None
+            if path.startswith("/"):  # dev without storage
+                return Path(path)
+            return storage.download(path, work / "current.mp4") if storage else None
+
+        result = run(
+            options,
+            clip,
+            edit,
+            work,
+            lambda stage, p: queue.progress(job, stage, p),
+            current_video=current_video,
+            terms=queue.terms(job.user_id),
+        )
+        paths: dict[Path, str] = {}
+        if storage is not None:
+            queue.progress(job, "upload", 1.0)
+            for file in (result.video_path, result.thumbnail_path):
+                paths[file] = storage.upload(job.user_id, job.project_id, file)
+        queue.save_edit(clip, result, paths)
+    except ValidationError as exc:
+        queue.give_up(job, f"invalid edit: {exc.errors(include_url=False)}")
+        log.warning("job %s: invalid edit", job.id)
+    except Exception as exc:  # noqa: BLE001 - recorded on the job, retried
+        log.exception("job %s failed", job.id)
+        queue.fail(job, f"{type(exc).__name__}: {exc}")
+    else:
+        queue.succeed(job)
+        log.info("job %s: clip %s re-rendered", job.id, job.clip_id)
+        if storage is not None:
+            shutil.rmtree(work, ignore_errors=True)
 
 
 def expire(queue: JobQueue, storage: ClipStorage | None) -> int:

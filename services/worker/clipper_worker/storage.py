@@ -44,6 +44,20 @@ class ClipStorage:
             raise RuntimeError(f"storage upload failed ({resp.status_code}): {resp.text[:300]}")
         return path
 
+    def download(self, path: str, dest: Path) -> Path:
+        """Fetch an object to `dest` (a clip's current file, before a re-render)."""
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with self.client.stream("GET", f"{self.base}/{path}", headers=self.headers) as resp:
+            if resp.status_code >= 300:
+                resp.read()
+                raise RuntimeError(
+                    f"storage download failed ({resp.status_code}): {resp.text[:300]}"
+                )
+            with dest.open("wb") as out:
+                for chunk in resp.iter_bytes():
+                    out.write(chunk)
+        return dest
+
     def delete(self, paths: list[str]) -> None:
         """Remove objects from the bucket; missing ones are ignored by Supabase."""
         for i in range(0, len(paths), 1000):

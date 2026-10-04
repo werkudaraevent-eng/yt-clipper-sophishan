@@ -11,6 +11,8 @@ from psycopg.types.json import Jsonb
 
 if TYPE_CHECKING:
     from .engine.pipeline import PipelineResult
+    from .engine.rerender import ClipRow, Rerendered
+    from .engine.transcript import Word
     from .notify import Notification
 
 
@@ -25,6 +27,13 @@ class Job:
     options: dict[str, Any]
     # Credits taken when the project was created: one per minute of timeframe.
     credits_charged: int = 0
+    # A re-render ('rerender_clip'): the clip and the edit to apply.
+    clip_id: UUID | None = None
+    payload: dict[str, Any] | None = None
+
+
+def _words_json(words: "list[Word]") -> Jsonb:
+    return Jsonb([{"text": w.text, "start": w.start, "end": w.end} for w in words])
 
 
 class JobQueue:
@@ -40,7 +49,7 @@ class JobQueue:
         row = self.conn.execute(
             """
             select j.id, j.project_id, p.user_id, j.kind, j.attempt, j.max_attempts, p.options,
-                   p.credits_charged
+                   p.credits_charged, j.clip_id, j.payload
               from public.claim_job(%s) j
               join public.projects p on p.id = j.project_id
             """,
@@ -95,18 +104,70 @@ class JobQueue:
                     """
                     insert into public.clips (project_id, position, start_seconds, end_seconds,
                         title, hook_text, description, virality_score, reason,
-                        video_path, thumbnail_path, caption_words)
-                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        video_path, thumbnail_path, caption_words, render)
+                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         job.project_id, clip.position, h.start, h.end, h.title, h.hook_text,
                         h.description, h.virality_score, h.reason,
                         paths.get(clip.video_path, str(clip.video_path)),
                         paths.get(clip.thumbnail_path, str(clip.thumbnail_path)),
-                        Jsonb([{"text": w.text, "start": w.start, "end": w.end}
-                               for w in clip.words]),
+                        _words_json(clip.words),
+                        Jsonb(clip.render) if clip.render is not None else None,
                     ),
                 )  # fmt: skip
+
+    def load_clip(self, clip_id: UUID) -> "ClipRow | None":
+        from .engine.rerender import ClipRow
+        from .engine.transcript import Word
+
+        row = self.conn.execute(
+            """
+            select id, position, start_seconds, end_seconds, title, hook_text, description,
+                   virality_score, reason, video_path, caption_words, render
+              from public.clips where id = %s
+            """,
+            (clip_id,),
+        ).fetchone()
+        if row is None:
+            return None
+        return ClipRow(
+            id=row["id"], position=row["position"], start=row["start_seconds"],
+            end=row["end_seconds"], title=row["title"] or "", hook_text=row["hook_text"] or "",
+            description=row["description"] or "", virality_score=round(row["virality_score"] or 0),
+            reason=row["reason"] or "", video_path=row["video_path"],
+            words=[Word(w["text"], w["start"], w["end"]) for w in row["caption_words"] or []],
+            render=row["render"],
+        )  # fmt: skip
+
+    def terms(self, user_id: UUID) -> list[tuple[str, str]]:
+        """The owner's name dictionary: (wrong, correct) spellings."""
+        rows = self.conn.execute(
+            "select wrong, correct from public.user_terms where user_id = %s order by id",
+            (user_id,),
+        ).fetchall()
+        return [(r["wrong"], r["correct"]) for r in rows]
+
+    def save_edit(
+        self, clip: "ClipRow", result: "Rerendered", paths: dict[Path, str] | None = None
+    ) -> None:
+        """Point the clip row at its re-rendered files and record the edit."""
+        paths = paths or {}
+        self.conn.execute(
+            """
+            update public.clips
+               set start_seconds = %s, end_seconds = %s, hook_text = %s, caption_words = %s,
+                   render = %s, video_path = %s, thumbnail_path = %s, edited_at = now()
+             where id = %s
+            """,
+            (
+                result.start, result.end, result.hook_text, _words_json(result.words),
+                Jsonb(result.render),
+                paths.get(result.video_path, str(result.video_path)),
+                paths.get(result.thumbnail_path, str(result.thumbnail_path)),
+                clip.id,
+            ),
+        )  # fmt: skip
 
     def expire_projects(self, batch: int = 100) -> list[str]:
         """Expire overdue projects; returns the clip file paths to delete."""

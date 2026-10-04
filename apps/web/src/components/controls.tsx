@@ -72,6 +72,7 @@ export function Segmented<T extends string>({
   onChange,
   label,
   alwaysCheck = false,
+  fit = false,
 }: {
   value: T;
   options: { value: T; label: string }[];
@@ -79,9 +80,11 @@ export function Segmented<T extends string>({
   label: string;
   /** Show the selected check on compact windows too (fine with two or three segments). */
   alwaysCheck?: boolean;
+  /** Segments as wide as their labels instead of filling the row; the check always shows. */
+  fit?: boolean;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex w-full">
+    <div role="group" aria-label={label} className={fit ? "flex max-w-full" : "flex w-full"}>
       {options.map((o, i) => {
         const selected = o.value === value;
         return (
@@ -90,13 +93,15 @@ export function Segmented<T extends string>({
             type="button"
             aria-pressed={selected}
             onClick={() => onChange(o.value)}
-            className={`state-layer focus-ring flex h-10 min-w-12 flex-1 items-center justify-center gap-2 border border-outline px-2 text-label-l whitespace-nowrap sm:px-3 ${
+            className={`state-layer focus-ring flex h-10 min-w-12 items-center justify-center gap-2 border border-outline text-label-l whitespace-nowrap ${
+              fit ? "pr-4 pl-3" : "flex-1 px-2 sm:px-3"
+            } ${
               i === 0 ? "rounded-l-full" : "-ml-px"
             } ${i === options.length - 1 ? "rounded-r-full" : ""} ${
               selected ? "bg-secondary-container text-on-secondary-container" : "text-on-surface"
             }`}
           >
-            {selected && <Icon name="check" size={18} className={alwaysCheck ? undefined : "hidden sm:block"} />}
+            {selected && <Icon name="check" size={18} className={alwaysCheck || fit ? undefined : "hidden sm:block"} />}
             {o.label}
           </button>
         );

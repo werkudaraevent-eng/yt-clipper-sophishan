@@ -73,6 +73,7 @@ export async function AppShell({
   title,
   backHref,
   onChangelog = false,
+  hideBottomNav = false,
   children,
 }: {
   user: User | null;
@@ -80,6 +81,8 @@ export async function AppShell({
   backHref?: string;
   /** The release notes page itself: no "new" badge on the top bar link. */
   onChangelog?: boolean;
+  /** Pages with their own action bar at the bottom of compact screens (the clip editor). */
+  hideBottomNav?: boolean;
   children: React.ReactNode;
 }) {
   const t = await getDictionary();
@@ -149,7 +152,7 @@ export async function AppShell({
         </div>
       </nav>
 
-      <div className="flex min-w-0 flex-1 flex-col pb-20 md:pb-0">
+      <div className={`flex min-w-0 flex-1 flex-col md:pb-0 ${hideBottomNav ? "" : "pb-20"}`}>
         <header className="sticky top-0 z-10 flex h-16 items-center gap-2 bg-surface px-4 sm:px-6 lg:px-12">
           {backHref ? (
             <Link
@@ -205,9 +208,11 @@ export async function AppShell({
         </main>
       </div>
 
-      <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 bg-surface-container md:hidden">
-        <NavDestinations items={items} variant="bar" />
-      </nav>
+      {!hideBottomNav && (
+        <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-20 bg-surface-container md:hidden">
+          <NavDestinations items={items} variant="bar" />
+        </nav>
+      )}
     </div>
   );
 }

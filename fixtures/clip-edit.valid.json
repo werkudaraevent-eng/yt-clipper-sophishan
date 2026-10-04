@@ -1,0 +1,21 @@
+[
+  { "hook": "Kenapa dia keluar dari timnas?" },
+  {
+    "words": [
+      { "text": "Matheus", "start": 61.2, "end": 61.6 },
+      { "text": "Cunha,", "start": 61.6, "end": 62.1 }
+    ]
+  },
+  { "start": 58.5, "end": 101 },
+  {
+    "style": {
+      "template": "box",
+      "position": "middle",
+      "wordsPerCaption": 2,
+      "layout": "fit",
+      "hookTitle": false,
+      "coldOpen": true
+    }
+  },
+  { "words": [], "hook": "", "style": {} }
+]

@@ -46,7 +46,7 @@ def test_retry_sends_nothing_until_the_job_fails_for_good(conn, make_project, tm
     pid = make_project()
     q, mailer = JobQueue(conn, "w1"), FakeMailer()
 
-    def broken(options, report, work):
+    def broken(options, report, work, **_):
         raise RuntimeError("download blocked")
 
     for attempt in (1, 2, 3):

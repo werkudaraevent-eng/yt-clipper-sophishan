@@ -3,7 +3,7 @@
 import json
 import re
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -228,6 +228,66 @@ def clip_edges(words: list[Word], first: int, last: int) -> tuple[float, float]:
     if last + 1 < len(words):
         end = min(end, words[last + 1].start - 0.08)
     return max(0.0, start), max(end, words[last].start + 0.3)
+
+
+_LEAD = re.compile(r"^[\W_]*")
+_TRAIL = re.compile(r"[\W_]*$")
+
+
+def _key(text: str) -> str:
+    """A word as it is matched against a term: no edge punctuation, no case."""
+    return _TRAIL.sub("", _LEAD.sub("", text)).casefold()
+
+
+def apply_terms(words: list[Word], terms: Sequence[tuple[str, str]]) -> list[Word]:
+    """Respell the names a user taught us (their name dictionary).
+
+    Every run of words that reads as a term's wrong spelling, case and edge
+    punctuation aside, becomes the right one: "Mateus Kunya," turns into
+    "Matheus Cunha,". The new words take the old words' time, spread by length
+    when the count changes. Longer terms win over shorter ones.
+    """
+    patterns = []
+    for wrong, correct in terms:
+        keys = tuple(k for k in (_key(t) for t in wrong.split()) if k)
+        if keys and correct.split():
+            patterns.append((keys, correct.split()))
+    if not patterns or not words:
+        return words
+    patterns.sort(key=lambda p: -len(p[0]))
+    keys = [_key(w.text) for w in words]
+    out: list[Word] = []
+    i = 0
+    while i < len(words):
+        for wrong, correct in patterns:
+            if tuple(keys[i : i + len(wrong)]) == wrong:
+                out += _respell(words[i : i + len(wrong)], correct)
+                i += len(wrong)
+                break
+        else:
+            out.append(words[i])
+            i += 1
+    return out
+
+
+def _respell(old: list[Word], tokens: list[str]) -> list[Word]:
+    lead = _LEAD.match(old[0].text).group()
+    trail = _TRAIL.search(old[-1].text).group()
+    texts = list(tokens)
+    if not _LEAD.match(texts[0]).group():
+        texts[0] = lead + texts[0]
+    if not _TRAIL.search(texts[-1]).group():
+        texts[-1] += trail
+    if len(texts) == len(old):
+        return [Word(t, w.start, w.end) for t, w in zip(texts, old, strict=True)]
+    start, end = old[0].start, old[-1].end
+    total = sum(len(t) for t in tokens)
+    out, at = [], start
+    for t, tok in zip(texts, tokens, strict=True):
+        span = (end - start) * len(tok) / total
+        out.append(Word(t, round(at, 3), round(at + span, 3)))
+        at += span
+    return out
 
 
 def save_words(words: list[Word], path: Path) -> None:

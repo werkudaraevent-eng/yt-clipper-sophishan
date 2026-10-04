@@ -71,7 +71,7 @@ def test_stale_running_job_is_reclaimed(conn, make_project):
     assert job is not None and job.attempt == 2
 
 
-def fake_run(options, report, work):
+def fake_run(options, report, work, **_):
     from pathlib import Path
 
     from clipper_worker.engine.highlights import Highlight
@@ -113,7 +113,7 @@ def test_worker_records_pipeline_errors_for_retry(conn, make_project, tmp_path):
     pid = make_project()
     q = JobQueue(conn, "w1")
 
-    def broken(options, report, work):
+    def broken(options, report, work, **_):
         raise RuntimeError("download blocked")
 
     worker_main.process(q, q.claim(), run=broken, work_root=tmp_path)
@@ -136,7 +136,7 @@ def test_worker_only_processes_the_minutes_that_were_paid_for(conn, make_user, t
     )
     seen = []
 
-    def spy(options, report, work):
+    def spy(options, report, work, **_):
         seen.append((options.timeframe.start, options.timeframe.end))
         return fake_run(options, report, work)
 

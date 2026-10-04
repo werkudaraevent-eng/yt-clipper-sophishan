@@ -1,0 +1,8 @@
+[
+  {"words": [{"text": "", "start": 1, "end": 2}]},
+  {"words": [{"text": "ok", "start": -1, "end": 2}]},
+  {"hook": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},
+  {"start": 10, "end": 11},
+  {"style": {"template": "neon"}},
+  {"style": {"wordsPerCaption": 9}}
+]
