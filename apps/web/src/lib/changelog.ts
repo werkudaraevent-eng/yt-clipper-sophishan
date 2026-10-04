@@ -26,7 +26,10 @@ export const RELEASES: Release[] = [
     items: [
       {
         kind: "new",
-        title: { id: "Split 2, 3, atau 4 orang", en: "Split for 2, 3 or 4 people" },
+        title: {
+          id: "Split 2, 3, atau 4 orang",
+          en: "Split for 2, 3 or 4 people",
+        },
         body: {
           id: "Di mode Auto, saat dua orang saling sahut atau beberapa orang ketawa bareng, layar otomatis dibagi supaya semuanya terlihat. Di luar momen itu, crop tetap fokus ke satu orang yang sedang bicara.",
           en: "In Auto layout, when two people trade lines or a group laughs together, the screen splits so everyone is visible. Otherwise the crop stays on the one person talking.",
@@ -51,7 +54,10 @@ export const RELEASES: Release[] = [
       },
       {
         kind: "new",
-        title: { id: "Jadwalkan beberapa klip sekaligus", en: "Schedule several clips at once" },
+        title: {
+          id: "Jadwalkan beberapa klip sekaligus",
+          en: "Schedule several clips at once",
+        },
         body: {
           id: "Pilih beberapa klip di hasil proyek, lalu klip dibagi 1 atau 2 per hari di jam ramai.",
           en: "Select several clips in a project's results and they're spread out, 1 or 2 a day, at busy hours.",
@@ -67,7 +73,10 @@ export const RELEASES: Release[] = [
       },
       {
         kind: "fixed",
-        title: { id: "Link email tidak lagi gagal", en: "Email links no longer fail" },
+        title: {
+          id: "Link email tidak lagi gagal",
+          en: "Email links no longer fail",
+        },
         body: {
           id: "Link masuk dan konfirmasi dari email kini tetap jalan walau dibuka di browser atau HP lain, dan emailnya datang dari login@sofish.tech dengan tampilan Sophishan.",
           en: "Sign-in and confirmation links now work even when opened in another browser or phone, and the email comes from login@sofish.tech with the Sophishan look.",
@@ -75,7 +84,10 @@ export const RELEASES: Release[] = [
       },
       {
         kind: "new",
-        title: { id: "Posisi antrean dan perkiraan mulai", en: "Queue position and start estimate" },
+        title: {
+          id: "Posisi antrean dan perkiraan mulai",
+          en: "Queue position and start estimate",
+        },
         body: {
           id: "Saat project masih menunggu, halamannya menunjukkan posisimu di antrean, berapa project di depanmu, dan kira-kira kapan mulai diproses.",
           en: "While a project is waiting, its page shows your place in the queue, how many projects are ahead of you, and roughly when it will start.",
@@ -83,7 +95,10 @@ export const RELEASES: Release[] = [
       },
       {
         kind: "new",
-        title: { id: "Kabari saya saat klip siap", en: "Notify me when clips are ready" },
+        title: {
+          id: "Kabari saya saat klip siap",
+          en: "Notify me when clips are ready",
+        },
         body: {
           id: "Tidak perlu menunggu di halaman project. Kami kirim email begitu klip jadi, atau kalau gagal beserta kabar bahwa kreditnya kembali. Bisa juga lewat notifikasi browser, dan bisa dimatikan dari sakelar di kartu progres.",
           en: "No need to wait on the project page. We email you when the clips are done, or if it fails, with word that the credits are back. Browser notifications work too, and the switch on the progress card turns it off.",
@@ -91,7 +106,10 @@ export const RELEASES: Release[] = [
       },
       {
         kind: "fixed",
-        title: { id: "Download tidak lagi macet di 2%", en: "Downloads no longer stall at 2%" },
+        title: {
+          id: "Download tidak lagi macet di 2%",
+          en: "Downloads no longer stall at 2%",
+        },
         body: {
           id: "Saat kamu memilih sebagian video, potongannya kini diunduh langsung tanpa diolah ulang, jadi jauh lebih cepat dan persentasenya terus bergerak.",
           en: "When you pick part of a video, that section is now fetched as is instead of being re-encoded, so it's much faster and the percentage keeps moving.",
@@ -99,7 +117,10 @@ export const RELEASES: Release[] = [
       },
       {
         kind: "improved",
-        title: { id: "Caption pas dengan omongan", en: "Captions in sync with the speech" },
+        title: {
+          id: "Caption pas dengan omongan",
+          en: "Captions in sync with the speech",
+        },
         body: {
           id: "Caption kini dibuat dari suara video itu sendiri, bukan dari subtitle YouTube. Kata muncul tepat saat diucapkan, dan omongan campuran Indonesia-Inggris tetap tertulis benar.",
           en: "Captions are now made from the video's own audio instead of YouTube's subtitles. Words show up as they're said, and talk that mixes Indonesian and English comes out right.",
