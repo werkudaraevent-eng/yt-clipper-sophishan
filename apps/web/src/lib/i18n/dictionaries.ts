@@ -406,6 +406,13 @@ const en = {
     queueAhead: "{n} projects ahead of you. Expected to start in about {time}.",
     queueAheadShort: "{n} ahead of you. Starts in about {time}.",
     queueNextHint: "Starts as soon as a worker frees up, usually within a few minutes.",
+    priority: "Priority queue",
+    priorityAhead:
+      "You're in the priority lane because you've bought credits. {n} projects ahead of you, expected to start in about {time}.",
+    priorityNextHint: "You're in the priority lane because you've bought credits. Starts as soon as a worker frees up.",
+    queueBusyFree:
+      "The queue is busy. Credit buyers get the priority lane and usually start much sooner. You can also close this page; we'll email you when it's done.",
+    seePacks: "See credit packs",
     queueBusy:
       "The queue is busy. You don't need to wait on this page: close it, and your clips will show up under Projects when they're done.",
     minutes: "{m} min",
@@ -880,6 +887,13 @@ const id: Dictionary = {
     queueAhead: "Ada {n} project di depanmu. Perkiraan mulai sekitar {time} lagi.",
     queueAheadShort: "{n} project di depanmu. Mulai sekitar {time} lagi.",
     queueNextHint: "Mulai begitu ada worker yang selesai, biasanya dalam beberapa menit.",
+    priority: "Antrean prioritas",
+    priorityAhead:
+      "Kamu di jalur prioritas karena pernah beli kredit. Ada {n} project di depanmu, perkiraan mulai sekitar {time} lagi.",
+    priorityNextHint: "Kamu di jalur prioritas karena pernah beli kredit. Mulai begitu ada worker yang selesai.",
+    queueBusyFree:
+      "Antrean sedang ramai. Pembeli kredit masuk jalur prioritas dan biasanya mulai jauh lebih cepat. Kamu juga boleh tutup halaman ini, nanti kami kabari lewat email.",
+    seePacks: "Lihat paket kredit",
     queueBusy:
       "Antrean sedang ramai. Kamu tidak perlu menunggu di halaman ini: tutup saja, dan klip akan muncul di menu Proyek begitu selesai.",
     minutes: "{m} menit",
