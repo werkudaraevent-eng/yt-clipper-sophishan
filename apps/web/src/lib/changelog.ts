@@ -43,6 +43,14 @@ export const RELEASES: Release[] = [
           en: "If you've ever bought a credit pack, your projects go in the priority lane and usually start much sooner when the queue is busy. Free users still get their turn: every third project is taken from the regular line.",
         },
       },
+      {
+        kind: "improved",
+        title: { id: "Video yang paling cocok", en: "Videos that work best" },
+        body: {
+          id: "Di bawah kolom link ada petunjuk bahwa hasil terbaik datang dari video yang banyak ngobrol. Halaman depan juga punya tanya jawab soal video yang cocok, kredit, dan lama klip disimpan.",
+          en: "A line under the link field says the best results come from talk-heavy videos. The front page also answers common questions about which videos fit, credits, and how long clips are kept.",
+        },
+      },
     ],
   },
   {

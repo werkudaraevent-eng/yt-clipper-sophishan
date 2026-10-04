@@ -69,6 +69,7 @@ class Source:
     # Transcribe the audio even though `words` (YouTube captions) exist; the
     # captions are kept as a fallback.
     transcribe: bool = False
+    vocabulary: str | None = None  # names and terms to spell right (title, tags...)
 
 
 @dataclass
@@ -134,6 +135,7 @@ def fetch_youtube(options: JobOptions, work: Path, report: ProgressFn) -> Source
         duration=info.duration,
         thumbnail=info.thumbnail,
         transcribe=transcriber() == "whisper",
+        vocabulary=youtube.vocabulary(info.raw),
     )
 
 
@@ -159,6 +161,7 @@ def transcribe(source: Source, options: JobOptions, report: ProgressFn) -> None:
             hint,
             os.environ.get("CLIPPER_WHISPER_MODEL", "large-v3-turbo"),
             on_progress=stage_reporter(report, "transcribe", 0.25, 0.39),
+            hint_words=source.vocabulary,
         )
     except Exception:
         if not source.words:
