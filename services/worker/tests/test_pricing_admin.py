@@ -1,4 +1,5 @@
 import json
+import re
 
 import psycopg
 import pytest
@@ -217,3 +218,26 @@ def test_referral_needs_the_program_on_and_a_new_account(conn, make_user):
         (friend,),
     )
     assert not _call(conn, friend, "select public.claim_referral(%s) as ok", code)["ok"]
+
+
+def _unguarded_writes(conn):
+    """UPDATE or DELETE statements with no WHERE clause in the API's functions."""
+    rows = conn.execute(
+        "select p.proname, p.prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace "
+        "where n.nspname in ('public', 'private') and p.prolang in "
+        "(select oid from pg_language where lanname in ('plpgsql', 'sql'))"
+    ).fetchall()
+    found = []
+    for row in rows:
+        source = re.sub(r"--[^\n]*", "", row["prosrc"])
+        for statement in source.split(";"):
+            match = re.search(r"\b(update\s+[\w.]+\s+set|delete\s+from)\b", statement, re.I)
+            if match and not re.search(r"\bwhere\b", statement[match.start() :], re.I):
+                found.append(f"{row['proname']}: {' '.join(statement.split())[:80]}")
+    return found
+
+
+def test_functions_never_update_or_delete_without_where(conn):
+    # Supabase loads pg-safeupdate for API sessions: such a statement fails there
+    # (even in a security definer function) while it passes in this test database.
+    assert _unguarded_writes(conn) == []
