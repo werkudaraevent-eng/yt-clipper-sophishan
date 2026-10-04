@@ -111,7 +111,7 @@ export async function Landing() {
                       className="shrink-0 text-on-surface-variant transition-transform group-open:rotate-180"
                     />
                   </summary>
-                  <p className="-mt-2 pb-5 text-body-m text-on-surface-variant">{item.a}</p>
+                  <p className="-mt-2 pb-5 text-body-m text-on-surface-variant">{fill(item.a, free)}</p>
                 </details>
               ))}
             </div>

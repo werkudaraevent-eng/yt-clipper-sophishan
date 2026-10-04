@@ -182,7 +182,7 @@ const en = {
       },
       {
         q: "How many credits does it use?",
-        a: "1 credit per minute of the part of the video you process. New accounts get 30 free credits, enough to try a video of up to 30 minutes.",
+        a: "1 credit per minute of the part of the video you process. New accounts get {n} free credits, enough to try a video of up to {n} minutes.",
       },
       {
         q: "How long are clips kept?",
@@ -779,7 +779,7 @@ const id: Dictionary = {
       },
       {
         q: "Berapa kredit yang terpakai?",
-        a: "1 kredit per menit dari bagian video yang diproses. Akun baru dapat 30 kredit gratis, cukup untuk mencoba video sampai 30 menit.",
+        a: "1 kredit per menit dari bagian video yang diproses. Akun baru dapat {n} kredit gratis, cukup untuk mencoba video sampai {n} menit.",
       },
       {
         q: "Berapa lama klip disimpan?",

@@ -97,6 +97,7 @@ function Field({
   type = "text",
   className = "",
   bg = "bg-surface-container-lowest",
+  placeholder = "0",
 }: {
   label?: string;
   value: string;
@@ -108,9 +109,10 @@ function Field({
   type?: "text" | "datetime-local";
   className?: string;
   bg?: string;
+  placeholder?: string;
 }) {
   return (
-    <label className={`relative flex h-14 items-center gap-1 rounded-xs border border-outline px-4 focus-within:border-2 focus-within:border-primary focus-within:px-[15px] ${disabled ? "border-transparent px-0 focus-within:px-0" : ""} ${className}`}>
+    <label className={`relative flex h-14 items-center gap-1 rounded-xs border border-outline px-3 focus-within:border-2 focus-within:border-primary focus-within:px-[11px] sm:px-4 sm:focus-within:px-[15px] ${disabled ? "border-transparent px-0 focus-within:px-0" : ""} ${className}`}>
       {label && (
         <span className={`pointer-events-none absolute -top-2 left-3 px-1 text-body-s text-on-surface-variant ${bg}`}>
           {label}
@@ -124,7 +126,7 @@ function Field({
         value={type === "text" ? grouped(value) : value}
         onChange={(e) => onChange(type === "text" ? digits(e.target.value) : e.target.value)}
         disabled={disabled}
-        placeholder={type === "text" ? "0" : undefined}
+        placeholder={type === "text" ? placeholder : undefined}
         className="min-w-0 flex-1 bg-transparent text-body-l text-on-surface tabular-nums outline-none placeholder:text-on-surface-variant disabled:text-on-surface"
       />
       {suffix && <span className="text-body-l text-on-surface-variant">{suffix}</span>}
@@ -401,13 +403,13 @@ export function PricingForm({
                     <span className="text-label-m text-on-surface-variant">{p.cols.visible}</span>
                     {visible}
                   </div>
-                  <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_minmax(0,2fr)] gap-2">
+                  <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,4fr)_minmax(0,2fr)] gap-2">
                     {credits}
                     {priceField}
                     {discountField}
                   </div>
                   <div className="flex items-center gap-2 text-body-s text-on-surface-variant">
-                    <span className="tabular-nums">
+                    <span className="whitespace-nowrap tabular-nums">
                       {valid && (discount ? rupiah(price) : fill(t.buy.perCredit, { price: rupiah(perCredit) }))}
                     </span>
                     {valid && discount ? (
@@ -416,7 +418,7 @@ export function PricingForm({
                       valid && saving && <Chip>{fill(t.buy.save, { n: saving })}</Chip>
                     )}
                     <span className="flex-1" />
-                    <span className="text-label-m">{p.cols.featured}</span>
+                    <span className="text-label-m whitespace-nowrap">{p.cols.featured}</span>
                     {radio}
                   </div>
                 </div>
@@ -776,7 +778,7 @@ function PromoDialog({
           </label>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label={d.maxUses} suffix={d.times} value={maxUses} onChange={setMaxUses} bg={BG} />
+          <Field label={d.maxUses} suffix={d.times} value={maxUses} onChange={setMaxUses} bg={BG} placeholder="∞" />
           <Field label={d.perUser} suffix={d.times} value={perUser} onChange={setPerUser} bg={BG} />
         </div>
         <div className="flex flex-col gap-1.5">
