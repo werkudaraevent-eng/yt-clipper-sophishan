@@ -36,6 +36,14 @@ export const RELEASES: Release[] = [
         },
       },
       {
+        kind: "new",
+        title: { id: "Antrean prioritas untuk pembeli kredit", en: "Priority queue for credit buyers" },
+        body: {
+          id: "Kalau kamu pernah beli paket kredit, project-mu masuk jalur prioritas dan biasanya mulai jauh lebih cepat saat antrean ramai. Pengguna gratis tetap kebagian giliran: setiap project ketiga diambil dari antrean biasa.",
+          en: "If you've ever bought a credit pack, your projects go in the priority lane and usually start much sooner when the queue is busy. Free users still get their turn: every third project is taken from the regular line.",
+        },
+      },
+      {
         kind: "improved",
         title: { id: "Video yang paling cocok", en: "Videos that work best" },
         body: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { PIPELINE_STAGES } from "@clipper/shared";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -27,6 +28,8 @@ export type QueuePlace = {
   workers: number;
   avg_seconds: number;
   eta_seconds: number;
+  /** In the priority lane: the owner has bought credits before. */
+  priority: boolean;
 };
 
 const POLL_MS = 3000;
@@ -120,7 +123,15 @@ export function Progress({
   return (
     <section className="flex flex-col gap-5 rounded-xl bg-surface-container-low p-5 sm:p-6" aria-live="polite">
       <div className="flex items-center justify-between gap-3">
-        <StatusBadge status={running ? "processing" : "queued"} />
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={running ? "processing" : "queued"} />
+          {waiting?.priority && (
+            <span className="inline-flex h-6 items-center gap-1 rounded-sm bg-tertiary-container pr-2 pl-1.5 text-label-m text-on-tertiary-container">
+              <Icon name="tollFill" size={16} />
+              {t.progress.priority}
+            </span>
+          )}
+        </div>
         {currentIndex >= 0 && (
           <span className="text-label-l text-on-surface-variant">
             {fill(t.progress.step, { n: currentIndex + 1, total: PIPELINE_STAGES.length })}
@@ -143,7 +154,9 @@ export function Progress({
             <p className="mt-1 text-body-m text-on-surface-variant">{t.progress.stageHints[stage]}</p>
           )}
           {waiting && !ahead && (
-            <p className="mt-1 text-body-m text-on-surface-variant">{t.progress.queueNextHint}</p>
+            <p className="mt-1 text-body-m text-on-surface-variant">
+              {waiting.priority ? t.progress.priorityNextHint : t.progress.queueNextHint}
+            </p>
           )}
           {waiting && ahead > 0 && (
             <p className="mt-1 text-body-m text-on-surface-variant">
@@ -151,7 +164,7 @@ export function Progress({
                 {fill(t.progress.queueAheadShort, { n: ahead, time: eta(waiting.eta_seconds, t.progress) })}
               </span>
               <span className="hidden sm:inline">
-                {fill(t.progress.queueAhead, { n: ahead, time: eta(waiting.eta_seconds, t.progress) })}
+                {fill(waiting.priority ? t.progress.priorityAhead : t.progress.queueAhead, { n: ahead, time: eta(waiting.eta_seconds, t.progress) })}
               </span>
             </p>
           )}
@@ -206,10 +219,23 @@ export function Progress({
       )}
 
       {waiting && waiting.eta_seconds > BUSY_ETA_SECONDS && (
-        <p className="flex gap-2 rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
+        <div className="flex gap-2 rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
           <Icon name="hourglass" size={20} className="shrink-0" />
-          {t.progress.queueBusy}
-        </p>
+          {waiting.priority ? (
+            <p>{t.progress.queueBusy}</p>
+          ) : (
+            <div className="flex flex-col items-start gap-3">
+              <p>{t.progress.queueBusyFree}</p>
+              <Link
+                href="/credits"
+                className="state-layer focus-ring inline-flex h-10 items-center gap-2 rounded-full bg-secondary-container pr-6 pl-4 text-label-l text-on-secondary-container"
+              >
+                <Icon name="tollFill" size={20} />
+                {t.progress.seePacks}
+              </Link>
+            </div>
+          )}
+        </div>
       )}
       {notify && <NotifyBox initial={notify.on} email={notify.email} />}
       {stale && (
