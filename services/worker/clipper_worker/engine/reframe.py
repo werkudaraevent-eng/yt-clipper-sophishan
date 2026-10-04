@@ -120,6 +120,8 @@ class Face:
     x: float  # face centre, 0..1 of the frame width
     area: float  # fraction of the frame
     activity: float | None  # mouth movement since the previous sample
+    y: float = 0.4  # face centre, 0..1 of the frame height
+    h: float = 0.2  # face height, 0..1 of the frame height
 
 
 @dataclass(frozen=True)
@@ -253,6 +255,8 @@ class _Detection:
     x: float
     area: float
     box: tuple[float, float, float, float]  # mouth region in full-frame pixels
+    y: float = 0.4
+    h: float = 0.2
 
 
 class FaceDetector:
@@ -292,7 +296,12 @@ class FaceDetector:
                 mx, my = (rx + lx) / 2, (ry + ly) / 2
                 half = max(abs(lx - rx), 0.3 * fw) * 0.75
                 box = (mx - half, my - 0.12 * fh, mx + half, my + 0.22 * fh)
-                out.append(_Detection(float((fx + fw / 2) / w), float(fw * fh / (w * h)), box))
+                out.append(
+                    _Detection(
+                        float((fx + fw / 2) / w), float(fw * fh / (w * h)), box,
+                        float((fy + fh / 2) / h), float(fh / h),
+                    )
+                )  # fmt: skip
         elif self._haar is not None:
             gray = self.cv2.cvtColor(small, self.cv2.COLOR_BGR2GRAY)
             min_side = small.shape[0] // 12
@@ -301,7 +310,12 @@ class FaceDetector:
             ):
                 x, y, fw, fh = (v / scale for v in (x, y, fw, fh))
                 box = (x + 0.2 * fw, y + 0.65 * fh, x + 0.8 * fw, y + fh)
-                out.append(_Detection(float((x + fw / 2) / w), float(fw * fh / (w * h)), box))
+                out.append(
+                    _Detection(
+                        float((x + fw / 2) / w), float(fw * fh / (w * h)), box,
+                        float((y + fh / 2) / h), float(fh / h),
+                    )
+                )  # fmt: skip
         return out
 
     def mouth_patch(self, gray, box):
@@ -376,7 +390,7 @@ def face_track(video: Path, start: float, end: float) -> tuple[list[Sample], int
                         if patch is not None and before is not None:
                             activity = float(np.abs(patch - before).mean())
                         seen[near] = (d.x, patch)
-                        faces.append(Face(near, d.x, d.area, activity))
+                        faces.append(Face(near, d.x, d.area, activity, d.y, d.h))
                     # Faces not seen now keep their place but lose their mouth
                     # crop, so a later sample isn't compared with a stale one.
                     for k, (x, _) in tracks.items():

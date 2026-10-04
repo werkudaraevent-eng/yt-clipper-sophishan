@@ -152,7 +152,7 @@ const en = {
     freeNote: "Free to start: {n} credits, 1 credit per minute of video processed.",
     badge: "AI picks the best moments, you just download",
     recent: "Recent projects",
-    tip: "Podcasts and interviews of 20 to 90 minutes give the best results. Processing takes about 10 minutes per hour of video.",
+    tip: "Videos of 20 to 90 minutes give the best results. Processing takes about 10 minutes per hour of video.",
   },
   landing: {
     badge: "{n} free credits to try",
@@ -161,7 +161,7 @@ const en = {
     signInNote: "Sign in to start. No credit card needed.",
     stepsTitle: "Three steps, about 10 minutes",
     steps: [
-      { title: "1. Paste a link", body: "Podcasts, talks, reviews or live streams. Pick the part and the language if you need to." },
+      { title: "1. Paste a link", body: "Podcasts, interviews, talks or reviews. Pick the part and the language if you need to." },
       { title: "2. AI picks the moments", body: "The transcript is read, the strongest hooks get a virality score and are cut at the end of a sentence." },
       { title: "3. Download and post", body: "9:16 clips with the face centred and karaoke captions, ready for TikTok, Reels and Shorts." },
     ],
@@ -169,6 +169,25 @@ const en = {
       { title: "The first capital was just 2 million", hook: "I started from my bedroom, seriously.", caption: ["JUST TWO", "MILLION RUPIAH"], range: "03:10 – 03:58", duration: "0:48", score: 88 },
       { title: "How I got 10k subscribers", hook: "Everyone gets the algorithm wrong.", caption: ["THIS SECRET", "IS RARE"], range: "12:04 – 12:46", duration: "0:42", score: 92 },
       { title: "The biggest founder mistake", hook: "Don't hire your friends first.", caption: ["DON'T HIRE", "FRIENDS FIRST"], range: "27:41 – 28:15", duration: "0:34", score: 85 },
+    ],
+    faqTitle: "Frequently asked questions",
+    faq: [
+      {
+        q: "What kind of video works best?",
+        a: "Talk-heavy videos: podcasts, interviews, talks, talk shows and reviews. The AI picks moments from what is said, so the clearer the conversation, the better the clips.",
+      },
+      {
+        q: "Does it work for gaming, vlogs or music?",
+        a: "You can try, but the results are not as good as with talk-heavy videos, because the best moments are in the picture, not in what is said. If no speech is found at all, processing stops and your credits are refunded in full.",
+      },
+      {
+        q: "How many credits does it use?",
+        a: "1 credit per minute of the part of the video you process. New accounts get 30 free credits, enough to try a video of up to 30 minutes.",
+      },
+      {
+        q: "How long are clips kept?",
+        a: "60 days from when they are made. After that they are deleted automatically, so download or post the clips you like before then.",
+      },
     ],
   },
   login: {
@@ -193,6 +212,7 @@ const en = {
   create: {
     url: "YouTube URL",
     urlPlaceholder: "Paste a YouTube link…",
+    fitHint: "Works best for talk-heavy videos, like podcasts, interviews, talks and reviews.",
     submit: "Make clips",
     starting: "Starting…",
     settings: "Clip settings",
@@ -729,7 +749,7 @@ const id: Dictionary = {
     freeNote: "Gratis untuk mulai: {n} kredit, 1 kredit per menit video yang diproses.",
     badge: "AI memilih momen terbaik, kamu tinggal unduh",
     recent: "Proyek terbaru",
-    tip: "Video podcast dan wawancara 20 sampai 90 menit memberi hasil terbaik. Proses rata-rata 10 menit per jam video.",
+    tip: "Video 20 sampai 90 menit memberi hasil terbaik. Proses rata-rata 10 menit per jam video.",
   },
   landing: {
     badge: "Gratis {n} kredit untuk mencoba",
@@ -738,7 +758,7 @@ const id: Dictionary = {
     signInNote: "Masuk untuk mulai. Tanpa kartu kredit.",
     stepsTitle: "Tiga langkah, sekitar 10 menit",
     steps: [
-      { title: "1. Tempel link", body: "Video podcast, kajian, review, atau live stream. Pilih bagian dan bahasa kalau perlu." },
+      { title: "1. Tempel link", body: "Podcast, wawancara, kajian, atau review. Pilih bagian dan bahasa kalau perlu." },
       { title: "2. AI memilih momen", body: "Transkrip dibaca, momen dengan hook terkuat diberi skor viral, lalu dipotong di akhir kalimat." },
       { title: "3. Unduh dan unggah", body: "Klip 9:16 dengan wajah di tengah dan subtitle karaoke, siap untuk TikTok, Reels, dan Shorts." },
     ],
@@ -746,6 +766,25 @@ const id: Dictionary = {
       { title: "Modal pertama cuma 2 juta", hook: "Saya mulai dari kamar kos, serius.", caption: ["CUMA DUA", "JUTA RUPIAH"], range: "03:10 – 03:58", duration: "0:48", score: 88 },
       { title: "Cara saya dapat 10rb subscriber", hook: "Semua orang salah soal algoritma.", caption: ["INI RAHASIA", "YANG JARANG"], range: "12:04 – 12:46", duration: "0:42", score: 92 },
       { title: "Kesalahan terbesar founder baru", hook: "Jangan rekrut teman dulu.", caption: ["JANGAN REKRUT", "TEMAN DULU"], range: "27:41 – 28:15", duration: "0:34", score: 85 },
+    ],
+    faqTitle: "Pertanyaan yang sering ditanyakan",
+    faq: [
+      {
+        q: "Video seperti apa yang paling cocok?",
+        a: "Video yang banyak ngobrol: podcast, wawancara, kajian, talk show, dan review. AI memilih momen dari apa yang diucapkan, jadi makin jelas obrolannya, makin bagus klipnya.",
+      },
+      {
+        q: "Bisa untuk video game, vlog, atau musik?",
+        a: "Bisa dicoba, tapi hasilnya belum sebagus video ngobrol, karena momen serunya ada di gambar, bukan di ucapan. Kalau sistem tidak menemukan ucapan sama sekali, proses berhenti dan kredit kamu kembali penuh.",
+      },
+      {
+        q: "Berapa kredit yang terpakai?",
+        a: "1 kredit per menit dari bagian video yang diproses. Akun baru dapat 30 kredit gratis, cukup untuk mencoba video sampai 30 menit.",
+      },
+      {
+        q: "Berapa lama klip disimpan?",
+        a: "60 hari sejak dibuat. Setelah itu klip dihapus otomatis, jadi unduh atau posting klip yang kamu suka sebelum waktunya habis.",
+      },
     ],
   },
   login: {
@@ -770,6 +809,7 @@ const id: Dictionary = {
   create: {
     url: "URL YouTube",
     urlPlaceholder: "Tempel link YouTube…",
+    fitHint: "Paling cocok untuk video yang banyak ngobrol, seperti podcast, wawancara, kajian, dan review.",
     submit: "Buat klip",
     starting: "Memulai…",
     settings: "Pengaturan klip",

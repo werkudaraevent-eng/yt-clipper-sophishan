@@ -5,7 +5,7 @@ import subprocess
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from . import reframe
+from . import reframe, split
 from .captions import write_ass
 from .highlights import Highlight
 from .transcript import Word, slice_words
@@ -59,7 +59,13 @@ def render_clip(
     if settings.layout == "auto":
         samples, src_w, src_h = reframe.face_track(source, start, start + duration)
         keyframes = reframe.plan_speaker_crops(samples, clip_words)
-        frame = reframe.tracking_filter(keyframes, src_w, src_h)
+        segments = split.plan_layout(
+            samples, clip_words, keyframes, duration, src_w / max(src_h, 1)
+        )
+        if any(len(s.people) > 1 for s in segments):
+            frame = split.layout_filter(segments, src_w, src_h)
+        else:
+            frame = reframe.tracking_filter(keyframes, src_w, src_h)
     else:
         frame = reframe.static_filter(settings.layout)
 
