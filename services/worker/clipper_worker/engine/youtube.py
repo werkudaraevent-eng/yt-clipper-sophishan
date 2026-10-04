@@ -4,6 +4,7 @@ import json
 import os
 import shutil
 import tempfile
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,8 +33,18 @@ def _writable_cookies(path: str) -> str:
     return str(copy)
 
 
+# Seconds without data before a stalled connection is dropped (and retried by
+# yt-dlp) instead of hanging the job until the queue reclaims it.
+SOCKET_TIMEOUT = 30
+
+
 def _base_opts() -> dict[str, Any]:
-    opts: dict[str, Any] = {"quiet": True, "no_warnings": True, "noprogress": True}
+    opts: dict[str, Any] = {
+        "quiet": True,
+        "no_warnings": True,
+        "noprogress": True,
+        "socket_timeout": SOCKET_TIMEOUT,
+    }
     if cookies := os.environ.get("YTDLP_COOKIES_FILE"):
         opts["cookiefile"] = _writable_cookies(cookies)
     if proxy := os.environ.get("YTDLP_PROXY"):
@@ -104,11 +115,16 @@ def download_section(
     out_dir: Path,
     duration: float = 0,
     on_progress: Callable[[float], None] | None = None,
+    info: dict[str, Any] | None = None,
 ) -> Path:
     """Download [start, end] of the video as mp4 (H.264/AAC, up to 1080p).
 
-    When the range covers the whole video the file is fetched as is: cutting a
-    range makes ffmpeg re-encode it, which takes minutes and reports nothing.
+    A range goes through ffmpeg as a stream copy: no re-encoding, so it is
+    bound by the network, not the CPU. ffmpeg seeks to the keyframe before
+    `start` and writes an edit list, so playback (ffmpeg, OpenCV) still starts
+    exactly at `start`. ffmpeg tells yt-dlp nothing until it is done, so
+    progress comes from watching the file grow against an estimated size
+    (from the bitrates in `info`, the metadata from `fetch_info`).
     `on_progress` gets the downloaded fraction, 0..1.
     """
     import yt_dlp
@@ -117,25 +133,86 @@ def download_section(
     out_dir.mkdir(parents=True, exist_ok=True)
     opts: dict[str, Any] = {
         **_base_opts(),
-        # >1080p on YouTube is VP9/AV1 only; prefer avc1 so the cut stays cheap.
-        "format": (
-            "bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=1080]+ba/b[height<=1080]/b"
-        ),
+        "format": FORMAT,
         "merge_output_format": "mp4",
         "outtmpl": str(out_dir / "source.%(ext)s"),
     }
     whole = start <= 0 and duration > 0 and end >= duration - 1
+    watcher = None
     if not whole:
         opts["download_ranges"] = download_range_func(None, [(start, end)])
-        opts["force_keyframes_at_cuts"] = True
+        # Abort a read that stalls instead of waiting forever (microseconds).
+        timeout_us = str(SOCKET_TIMEOUT * 10**6)
+        opts["external_downloader_args"] = {"ffmpeg_i": ["-rw_timeout", timeout_us]}
+        expected = _expected_bytes(info, end - start) if info else None
+        if on_progress is not None and expected:
+            watcher = _SizeWatcher(out_dir, expected, on_progress)
     if on_progress is not None:
         opts["progress_hooks"] = [_progress_hook(on_progress)]
     with yt_dlp.YoutubeDL(opts) as ydl:
-        ydl.download([url])
-    matches = sorted(out_dir.glob("source.*"))
+        if watcher:
+            watcher.start()
+        try:
+            ydl.download([url])
+        finally:
+            if watcher:
+                watcher.stop()
+    matches = sorted(p for p in out_dir.glob("source.*") if p.suffix != ".part")
     if not matches:
         raise RuntimeError("yt-dlp finished without producing a file")
     return matches[0]
+
+
+# >1080p on YouTube is VP9/AV1 only; prefer avc1 so the cut stays cheap.
+FORMAT = "bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]/bv*[height<=1080]+ba/b[height<=1080]/b"
+
+
+def _expected_bytes(info: dict[str, Any], seconds: float) -> float | None:
+    """Rough size of `seconds` of the formats FORMAT picks, from their bitrates."""
+    formats = info.get("formats") or []
+
+    def best(pred: Callable[[dict[str, Any]], bool], key: str) -> dict[str, Any] | None:
+        pool = [f for f in formats if pred(f) and f.get("tbr")]
+        return max(pool, key=lambda f: (f.get(key) or 0, f["tbr"]), default=None)
+
+    def is_video(f: dict[str, Any]) -> bool:
+        return (f.get("vcodec") or "none") != "none" and (f.get("height") or 0) <= 1080
+
+    video = best(lambda f: is_video(f) and str(f.get("vcodec")).startswith("avc1"), "height")
+    video = video or best(is_video, "height")
+    audio = best(lambda f: (f.get("vcodec") or "none") == "none" and f.get("ext") == "m4a", "abr")
+    kbps = sum(f["tbr"] for f in (video, audio) if f)
+    return kbps * 1000 / 8 * seconds if kbps else None
+
+
+class _SizeWatcher:
+    """Report how far the partial file has grown, every couple of seconds."""
+
+    def __init__(
+        self, out_dir: Path, expected: float, on_progress: Callable[[float], None]
+    ) -> None:
+        self._out_dir = out_dir
+        self._expected = expected
+        self._on_progress = on_progress
+        self._done = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._done.set()
+        self._thread.join()
+
+    def _run(self) -> None:
+        while not self._done.wait(2.0):
+            try:
+                size = sum(p.stat().st_size for p in self._out_dir.glob("source.*"))
+            except FileNotFoundError:  # renamed from .part between glob and stat
+                continue
+            if size:
+                # The estimate is rough; leave room so the bar never hits 100% early.
+                self._on_progress(min(size / self._expected, 0.95))
 
 
 def _progress_hook(on_progress: Callable[[float], None]) -> Callable[[dict[str, Any]], None]:

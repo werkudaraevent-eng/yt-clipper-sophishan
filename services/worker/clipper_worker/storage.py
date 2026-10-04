@@ -17,7 +17,8 @@ CONTENT_TYPES = {".mp4": "video/mp4", ".jpg": "image/jpeg"}
 
 class ClipStorage:
     def __init__(self, url: str, service_key: str, client: httpx.Client | None = None) -> None:
-        self.base = url.rstrip("/") + f"/storage/v1/object/{BUCKET}"
+        self.root = url.rstrip("/") + "/storage/v1"
+        self.base = f"{self.root}/object/{BUCKET}"
         self.client = client or httpx.Client(timeout=httpx.Timeout(30, write=600))
         self.headers = {"Authorization": f"Bearer {service_key}", "apikey": service_key}
 
@@ -51,3 +52,14 @@ class ClipStorage:
             )
             if resp.status_code >= 300:
                 raise RuntimeError(f"storage delete failed ({resp.status_code}): {resp.text[:300]}")
+
+    def signed_url(self, path: str, expires_in: int) -> str:
+        """A link anyone can open until it expires (the bucket is private)."""
+        resp = self.client.post(
+            f"{self.root}/object/sign/{BUCKET}/{path}",
+            headers=self.headers,
+            json={"expiresIn": expires_in},
+        )
+        if resp.status_code >= 300:
+            raise RuntimeError(f"storage sign failed ({resp.status_code}): {resp.text[:300]}")
+        return self.root + resp.json()["signedURL"]

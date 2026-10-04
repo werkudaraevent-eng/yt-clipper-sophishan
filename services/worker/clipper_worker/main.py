@@ -11,6 +11,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from .engine import pipeline
+from .notify import Mailer, notify_owner
 from .options import JobOptions
 from .queue import Job, JobQueue
 from .storage import ClipStorage
@@ -46,6 +47,7 @@ def process(
     run=pipeline.run,
     work_root: Path = WORK_ROOT,
     storage: ClipStorage | None = None,
+    mailer: Mailer | None = None,
 ) -> None:
     log.info("job %s: attempt %d/%d", job.id, job.attempt, job.max_attempts)
     work = work_root / str(job.project_id)
@@ -74,6 +76,12 @@ def process(
         log.info("job %s: done, %d clips", job.id, len(result.clips))
         if storage is not None:
             shutil.rmtree(work, ignore_errors=True)
+    # Ready, or failed for good: tell the owner. A job that will be retried
+    # leaves the project queued, and nothing is sent yet.
+    try:
+        notify_owner(queue, job.project_id, mailer, storage)
+    except Exception:  # noqa: BLE001 - the email must never fail the job
+        log.exception("job %s: done email failed", job.id)
 
 
 def expire(queue: JobQueue, storage: ClipStorage | None) -> int:
@@ -97,6 +105,9 @@ def main() -> None:
     storage = ClipStorage.from_env()
     if storage is None:
         log.warning("SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set: clips stay on local disk")
+    mailer = Mailer.from_env()
+    if mailer is None:
+        log.warning("RESEND_API_KEY not set: no done emails")
 
     stopping = False
 
@@ -121,7 +132,7 @@ def main() -> None:
         if job is None:
             time.sleep(POLL_INTERVAL_SECONDS)
             continue
-        process(queue, job, storage=storage)
+        process(queue, job, storage=storage, mailer=mailer)
 
 
 if __name__ == "__main__":

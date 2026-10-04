@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 import { Icon } from "./ui/Icon";
 
 export function Toggle({
@@ -13,7 +13,7 @@ export function Toggle({
   checked: boolean;
   onChange: (value: boolean) => void;
   label: string;
-  hint?: string;
+  hint?: ReactNode;
   labelClassName?: string;
 }) {
   const id = useId();

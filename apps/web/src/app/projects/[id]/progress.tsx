@@ -8,6 +8,7 @@ import { Icon } from "@/components/ui/Icon";
 import { type Dictionary, fill } from "@/lib/i18n/dictionaries";
 import { useDictionary } from "@/lib/i18n/client";
 import { createClient } from "@/lib/supabase/client";
+import { NotifyBox, notifyBrowser } from "./notify";
 
 type JobState = {
   stage: string | null;
@@ -55,11 +56,14 @@ export function Progress({
   projectStatus,
   initial,
   initialQueue,
+  notify,
 }: {
   projectId: string;
   projectStatus: string;
   initial: JobState | null;
   initialQueue: QueuePlace | null;
+  /** The owner's "notify me" switch; absent when signed out. */
+  notify: { on: boolean; email: string | null } | null;
 }) {
   const router = useRouter();
   const t = useDictionary();
@@ -91,6 +95,8 @@ export function Progress({
       // Re-render the page (badge, clips, error) whenever the project moves on.
       if (project && project.status !== projectStatus) {
         clearInterval(timer);
+        if (project.status === "ready") notifyBrowser(t.notify.readyTitle, t.notify.readyBody);
+        if (project.status === "failed") notifyBrowser(t.notify.failedTitle, t.notify.failedBody);
         router.refresh();
       }
     }, POLL_MS);
@@ -99,7 +105,7 @@ export function Progress({
       clearInterval(timer);
       clearInterval(clock);
     };
-  }, [projectId, projectStatus, router]);
+  }, [projectId, projectStatus, router, t]);
 
   const running = job?.status === "running";
   const current = running ? job.stage : null;
@@ -205,6 +211,7 @@ export function Progress({
           {t.progress.queueBusy}
         </p>
       )}
+      {notify && <NotifyBox initial={notify.on} email={notify.email} />}
       {stale && (
         <p role="alert" className="flex gap-2 rounded-md bg-warning-container p-3 text-body-m text-on-warning-container">
           <Icon name="error" size={20} className="shrink-0" />

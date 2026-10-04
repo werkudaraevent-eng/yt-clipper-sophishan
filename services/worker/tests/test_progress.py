@@ -89,10 +89,38 @@ def test_whole_video_is_downloaded_without_cutting(monkeypatch, tmp_path):
     assert "force_keyframes_at_cuts" not in captured
 
 
-def test_partial_range_is_cut(monkeypatch, tmp_path):
+def test_partial_range_is_stream_copied(monkeypatch, tmp_path):
     captured: dict = {}
     _fake_yt_dlp(monkeypatch, captured)
     youtube.download_section("u", 60, 300, tmp_path, duration=840, on_progress=lambda f: None)
-    assert captured["force_keyframes_at_cuts"] is True
+    # Re-encoding at the cuts pinned every core for minutes with no progress.
+    assert "force_keyframes_at_cuts" not in captured
     assert "download_ranges" in captured
+    assert "-rw_timeout" in captured["external_downloader_args"]["ffmpeg_i"]
     assert len(captured["progress_hooks"]) == 1
+
+
+def test_expected_bytes_uses_the_picked_formats():
+    info = {
+        "formats": [
+            {"vcodec": "avc1.640028", "height": 1080, "tbr": 2000},
+            {"vcodec": "avc1.4d401f", "height": 720, "tbr": 1000},
+            {"vcodec": "vp9", "height": 2160, "tbr": 9000},
+            {"vcodec": "none", "ext": "m4a", "abr": 128, "tbr": 128},
+            {"vcodec": "none", "ext": "webm", "abr": 160, "tbr": 160},
+        ]
+    }
+    assert youtube._expected_bytes(info, 10) == (2000 + 128) * 1000 / 8 * 10
+    assert youtube._expected_bytes({"formats": []}, 10) is None
+
+
+def test_size_watcher_reports_file_growth(tmp_path):
+    import time
+
+    seen: list[float] = []
+    watcher = youtube._SizeWatcher(tmp_path, 1000, seen.append)
+    (tmp_path / "source.mp4.part").write_bytes(b"x" * 400)
+    watcher.start()
+    time.sleep(2.3)
+    watcher.stop()
+    assert seen == [0.4]

@@ -18,7 +18,7 @@ from .highlights import (
     find_highlights,
 )
 from .render import RenderSettings, render_clip
-from .transcript import Word, load_words, slice_words, transcribe_with_whisper
+from .transcript import Word, load_words, slice_words, transcribe_audio
 from .translate import translate_words
 
 log = logging.getLogger("clipper_worker.pipeline")
@@ -66,6 +66,9 @@ class Source:
     video_id: str | None = None
     duration: float | None = None
     thumbnail: str | None = None
+    # Transcribe the audio even though `words` (YouTube captions) exist; the
+    # captions are kept as a fallback.
+    transcribe: bool = False
 
 
 @dataclass
@@ -119,6 +122,7 @@ def fetch_youtube(options: JobOptions, work: Path, report: ProgressFn) -> Source
         work,
         duration=info.duration,
         on_progress=stage_reporter(report, "download", 0.03, 0.24),
+        info=info.raw,
     )
     return Source(
         path=path,
@@ -129,7 +133,43 @@ def fetch_youtube(options: JobOptions, work: Path, report: ProgressFn) -> Source
         video_id=info.id,
         duration=info.duration,
         thumbnail=info.thumbnail,
+        transcribe=transcriber() == "whisper",
     )
+
+
+def transcriber() -> str:
+    """ "whisper" (default): word timings from the audio. "youtube": the video's
+    own caption track when it has one, which is faster but often lags the
+    speech and garbles talk that mixes languages."""
+    return os.environ.get("CLIPPER_TRANSCRIBER", "whisper")
+
+
+def transcribe(source: Source, options: JobOptions, report: ProgressFn) -> None:
+    """Replace `source.words` with Whisper's, keeping the captions on failure."""
+    # The language the user picked, else the one YouTube's captions are in.
+    # Naming it beats Whisper's guess, which mistakes Indonesian for Malay;
+    # English phrases inside the talk still come out in English.
+    hint = options.video_language
+    if hint in (None, "auto"):
+        hint = source.language
+    log.info("transcribing with whisper (%s)", hint or "language unknown")
+    try:
+        language, words = transcribe_audio(
+            source.path,
+            hint,
+            os.environ.get("CLIPPER_WHISPER_MODEL", "large-v3-turbo"),
+            on_progress=stage_reporter(report, "transcribe", 0.25, 0.39),
+        )
+    except Exception:
+        if not source.words:
+            raise
+        log.exception("whisper failed; using the YouTube captions")
+        return
+    if not words and source.words:
+        log.warning("whisper heard no words; using the YouTube captions")
+        return
+    source.words = [Word(w.text, w.start + source.offset, w.end + source.offset) for w in words]
+    source.language = language or source.language
 
 
 def default_highlighter(source: Source, options: JobOptions) -> Highlighter:
@@ -154,15 +194,8 @@ def run(
         source = fetch_youtube(options, work, report)
 
     report("transcribe", 0.25)
-    if not source.words:
-        log.info("no captions; transcribing with whisper")
-        words = transcribe_with_whisper(
-            source.path,
-            options.video_language,
-            os.environ.get("CLIPPER_WHISPER_MODEL", "small"),
-            on_progress=stage_reporter(report, "transcribe", 0.25, 0.39),
-        )
-        source.words = [Word(w.text, w.start + source.offset, w.end + source.offset) for w in words]
+    if not source.words or source.transcribe:
+        transcribe(source, options, report)
     if not source.words:
         raise RuntimeError("No speech found in the selected timeframe")
 

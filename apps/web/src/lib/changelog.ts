@@ -18,6 +18,34 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-04",
+    title: {
+      id: "Layar terbagi saat beberapa orang bicara",
+      en: "Split screen when several people talk",
+    },
+    items: [
+      {
+        kind: "new",
+        title: {
+          id: "Split 2, 3, atau 4 orang",
+          en: "Split for 2, 3 or 4 people",
+        },
+        body: {
+          id: "Di mode Auto, saat dua orang saling sahut atau beberapa orang ketawa bareng, layar otomatis dibagi supaya semuanya terlihat. Di luar momen itu, crop tetap fokus ke satu orang yang sedang bicara.",
+          en: "In Auto layout, when two people trade lines or a group laughs together, the screen splits so everyone is visible. Otherwise the crop stays on the one person talking.",
+        },
+      },
+      {
+        kind: "improved",
+        title: { id: "Video yang paling cocok", en: "Videos that work best" },
+        body: {
+          id: "Di bawah kolom link ada petunjuk bahwa hasil terbaik datang dari video yang banyak ngobrol. Halaman depan juga punya tanya jawab soal video yang cocok, kredit, dan lama klip disimpan.",
+          en: "A line under the link field says the best results come from talk-heavy videos. The front page also answers common questions about which videos fit, credits, and how long clips are kept.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-10-03",
     title: {
       id: "Jadwalkan posting di jam ramai penontonmu",
@@ -65,11 +93,27 @@ export const RELEASES: Release[] = [
         },
       },
       {
-        kind: "improved",
-        title: { id: "Video yang paling cocok", en: "Videos that work best" },
+        kind: "new",
+        title: { id: "Kabari saya saat klip siap", en: "Notify me when clips are ready" },
         body: {
-          id: "Di bawah kolom link ada petunjuk bahwa hasil terbaik datang dari video yang banyak ngobrol. Halaman depan juga punya tanya jawab soal video yang cocok, kredit, dan lama klip disimpan.",
-          en: "A line under the link field says the best results come from talk-heavy videos. The front page also answers common questions about which videos fit, credits, and how long clips are kept.",
+          id: "Tidak perlu menunggu di halaman project. Kami kirim email begitu klip jadi, atau kalau gagal beserta kabar bahwa kreditnya kembali. Bisa juga lewat notifikasi browser, dan bisa dimatikan dari sakelar di kartu progres.",
+          en: "No need to wait on the project page. We email you when the clips are done, or if it fails, with word that the credits are back. Browser notifications work too, and the switch on the progress card turns it off.",
+        },
+      },
+      {
+        kind: "fixed",
+        title: { id: "Download tidak lagi macet di 2%", en: "Downloads no longer stall at 2%" },
+        body: {
+          id: "Saat kamu memilih sebagian video, potongannya kini diunduh langsung tanpa diolah ulang, jadi jauh lebih cepat dan persentasenya terus bergerak.",
+          en: "When you pick part of a video, that section is now fetched as is instead of being re-encoded, so it's much faster and the percentage keeps moving.",
+        },
+      },
+      {
+        kind: "improved",
+        title: { id: "Caption pas dengan omongan", en: "Captions in sync with the speech" },
+        body: {
+          id: "Caption kini dibuat dari suara video itu sendiri, bukan dari subtitle YouTube. Kata muncul tepat saat diucapkan, dan omongan campuran Indonesia-Inggris tetap tertulis benar.",
+          en: "Captions are now made from the video's own audio instead of YouTube's subtitles. Words show up as they're said, and talk that mixes Indonesian and English comes out right.",
         },
       },
     ],

@@ -11,6 +11,7 @@ from psycopg.types.json import Jsonb
 
 if TYPE_CHECKING:
     from .engine.pipeline import PipelineResult
+    from .notify import Notification
 
 
 @dataclass(frozen=True)
@@ -111,6 +112,26 @@ class JobQueue:
         """Expire overdue projects; returns the clip file paths to delete."""
         rows = self.conn.execute("select path from public.expire_projects(%s)", (batch,)).fetchall()
         return [r["path"] for r in rows]
+
+    def take_notification(self, project_id: UUID) -> "Notification | None":
+        """Mark a finished project as notified; returns what the email needs, if wanted."""
+        from .notify import Notification
+
+        row = self.conn.execute(
+            "select * from public.take_project_notification(%s)", (project_id,)
+        ).fetchone()
+        return Notification(**row) if row else None
+
+    def top_clips(self, project_id: UUID, limit: int) -> list[tuple[str | None, str | None]]:
+        """(title, thumbnail path) of the best-scored clips, for the done email."""
+        rows = self.conn.execute(
+            """
+            select title, thumbnail_path from public.clips where project_id = %s
+             order by virality_score desc nulls last, position limit %s
+            """,
+            (project_id, limit),
+        ).fetchall()
+        return [(r["title"], r["thumbnail_path"]) for r in rows]
 
     def give_up(self, job: Job, error: str) -> None:
         """Fail without retrying (the error cannot go away on its own)."""
