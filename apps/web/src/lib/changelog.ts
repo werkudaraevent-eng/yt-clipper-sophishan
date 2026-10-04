@@ -35,6 +35,14 @@ export const RELEASES: Release[] = [
           en: "In Auto layout, when two people trade lines or a group laughs together, the screen splits so everyone is visible. Otherwise the crop stays on the one person talking.",
         },
       },
+      {
+        kind: "improved",
+        title: { id: "Video yang paling cocok", en: "Videos that work best" },
+        body: {
+          id: "Di bawah kolom link ada petunjuk bahwa hasil terbaik datang dari video yang banyak ngobrol. Halaman depan juga punya tanya jawab soal video yang cocok, kredit, dan lama klip disimpan.",
+          en: "A line under the link field says the best results come from talk-heavy videos. The front page also answers common questions about which videos fit, credits, and how long clips are kept.",
+        },
+      },
     ],
   },
   {

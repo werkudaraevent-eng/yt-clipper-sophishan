@@ -206,6 +206,10 @@ export function CreateForm({
               {error}
             </p>
           )}
+          <p className="mt-3 flex items-center justify-center gap-2 text-body-s text-on-surface-variant">
+            <Icon name="recordVoiceOver" size={16} className="shrink-0 text-primary" />
+            {t.create.fitHint}
+          </p>
           {short > 0 && credits != null ? (
             <div
               role="alert"
@@ -222,7 +226,7 @@ export function CreateForm({
               </Link>
             </div>
           ) : (
-            <p className="mt-3 flex items-center justify-center gap-2 text-body-s text-on-surface-variant">
+            <p className="mt-2 flex items-center justify-center gap-2 text-body-s text-on-surface-variant">
               <Icon name="tollFill" size={16} className="shrink-0 text-primary" />
               {credits != null
                 ? fill(t.create.cost, { cost, balance: credits })
