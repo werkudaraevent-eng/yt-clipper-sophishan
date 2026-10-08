@@ -8,7 +8,7 @@ Layouts:
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 OUT_W, OUT_H = 1080, 1920
@@ -110,6 +110,8 @@ TURN_PIECE_SECONDS = 1.0
 MIN_TURN_SECONDS = 2.0
 # ...and has to beat the current speaker's mouth movement by this factor.
 SWITCH_MARGIN = 1.4
+# The first speaker in a shot is picked on this much speech.
+FIRST_PICK_SECONDS = 3.0
 # Words further apart than this belong to separate stretches of speech.
 SPEECH_GAP_SECONDS = 0.5
 
@@ -203,17 +205,7 @@ def plan_speaker_crops(samples: list[Sample], words) -> list[tuple[float, float]
             current, pending = None, None
             next_cut = next(cut_iter, None)
 
-        inside = [s for s in samples if a <= s.t < b] or [
-            min(samples, key=lambda s: abs(s.t - (a + b) / 2))
-        ]
-        score: dict[int, float] = {}
-        xs: dict[int, list[float]] = {}
-        area: dict[int, float] = {}
-        for s in inside:
-            for f in s.faces:
-                score[f.track] = score.get(f.track, 0.0) + (f.activity or 0.0) / len(inside)
-                xs.setdefault(f.track, []).append(f.x)
-                area[f.track] = max(area.get(f.track, 0.0), f.area)
+        score, xs, area = _piece_scores(samples, a, b)
         if not score:
             continue  # nobody visible: hold the crop
         best = max(score, key=lambda k: (score[k], area[k]))
@@ -223,8 +215,17 @@ def plan_speaker_crops(samples: list[Sample], words) -> list[tuple[float, float]
             return v[len(v) // 2]
 
         if current is None:
-            current, pending = best, None
-            show(a, x_of(best))
+            # First speaker of a shot: judge on a few seconds, not one piece,
+            # since a wrong first pick then has to be out-talked to undo.
+            shot_end = next_cut.t if next_cut is not None else float("inf")
+            total: dict[int, float] = {}
+            for a2, b2 in pieces:
+                if a <= a2 < min(a + FIRST_PICK_SECONDS, shot_end):
+                    for k, v in _piece_scores(samples, a2, b2)[0].items():
+                        total[k] = total.get(k, 0.0) + v * (b2 - a2)
+            first = max((k for k in total if k in xs), key=lambda k: total[k], default=best)
+            current, pending = first, None
+            show(a, x_of(first))
             continue
         if best != current and score[best] > SWITCH_MARGIN * score.get(current, 0.0):
             if pending is None or pending[0] != best:
@@ -242,12 +243,28 @@ def plan_speaker_crops(samples: list[Sample], words) -> list[tuple[float, float]
     return keyframes
 
 
+def _piece_scores(samples: list[Sample], a: float, b: float):
+    """Mean mouth activity, positions and size of each face over [a, b)."""
+    inside = [s for s in samples if a <= s.t < b] or [
+        min(samples, key=lambda s: abs(s.t - (a + b) / 2))
+    ]
+    score: dict[int, float] = {}
+    xs: dict[int, list[float]] = {}
+    area: dict[int, float] = {}
+    for s in inside:
+        for f in s.faces:
+            score[f.track] = score.get(f.track, 0.0) + (f.activity or 0.0) / len(inside)
+            xs.setdefault(f.track, []).append(f.x)
+            area[f.track] = max(area.get(f.track, 0.0), f.area)
+    return score, xs, area
+
+
 # ---------------------------------------------------------------------------
 # Face detection
 # ---------------------------------------------------------------------------
 
 MOUTH_PATCH = (24, 16)  # mouth crops are resized to this before comparing
-SCENE_CUT_DIFF = 40.0  # mean grey-level change (0..255) that counts as a cut
+SCENE_CUT_DIFF = 30.0  # mean grey-level change (0..255) that counts as a cut
 
 
 @dataclass(frozen=True)
@@ -257,6 +274,8 @@ class _Detection:
     box: tuple[float, float, float, float]  # mouth region in full-frame pixels
     y: float = 0.4
     h: float = 0.2
+    # Nose and cheeks: moves with the head and the camera but not with speech.
+    ref: tuple[float, float, float, float] | None = None
 
 
 class FaceDetector:
@@ -296,10 +315,12 @@ class FaceDetector:
                 mx, my = (rx + lx) / 2, (ry + ly) / 2
                 half = max(abs(lx - rx), 0.3 * fw) * 0.75
                 box = (mx - half, my - 0.12 * fh, mx + half, my + 0.22 * fh)
+                nx, ny = f[8] / scale, f[9] / scale
+                ref = (nx - 0.25 * fw, ny - 0.15 * fh, nx + 0.25 * fw, ny + 0.05 * fh)
                 out.append(
                     _Detection(
                         float((fx + fw / 2) / w), float(fw * fh / (w * h)), box,
-                        float((fy + fh / 2) / h), float(fh / h),
+                        float((fy + fh / 2) / h), float(fh / h), ref,
                     )
                 )  # fmt: skip
         elif self._haar is not None:
@@ -310,10 +331,11 @@ class FaceDetector:
             ):
                 x, y, fw, fh = (v / scale for v in (x, y, fw, fh))
                 box = (x + 0.2 * fw, y + 0.65 * fh, x + 0.8 * fw, y + fh)
+                ref = (x + 0.25 * fw, y + 0.4 * fh, x + 0.75 * fw, y + 0.6 * fh)
                 out.append(
                     _Detection(
                         float((x + fw / 2) / w), float(fw * fh / (w * h)), box,
-                        float((y + fh / 2) / h), float(fh / h),
+                        float((y + fh / 2) / h), float(fh / h), ref,
                     )
                 )  # fmt: skip
         return out
@@ -348,7 +370,7 @@ def face_track(video: Path, start: float, end: float) -> tuple[list[Sample], int
     step = max(1, round(fps / SAMPLE_FPS))
     detector = FaceDetector()
     samples: list[Sample] = []
-    # track -> (last x, mouth patch at the previous sample or None)
+    # track -> (last x, (mouth, nose) patches at the previous sample or None)
     tracks: dict[int, tuple[float, object]] = {}
     next_track = 0
     prev_thumb = None
@@ -385,10 +407,17 @@ def face_track(video: Path, start: float, end: float) -> tuple[list[Sample], int
                             before = None
                         else:
                             before = tracks[near][1]
-                        patch = detector.mouth_patch(gray, d.box)
+                        mouth = detector.mouth_patch(gray, d.box)
+                        nose = detector.mouth_patch(gray, d.ref) if d.ref else None
+                        patch = None if mouth is None else (mouth, nose)
                         activity = None
                         if patch is not None and before is not None:
-                            activity = float(np.abs(patch - before).mean())
+                            activity = float(np.abs(mouth - before[0]).mean())
+                            # Head turns, nods and camera moves change the
+                            # whole face; only mouth change beyond that counts.
+                            if nose is not None and before[1] is not None:
+                                head = float(np.abs(nose - before[1]).mean())
+                                activity = max(0.0, activity - 0.8 * head)
                         seen[near] = (d.x, patch)
                         faces.append(Face(near, d.x, d.area, activity, d.y, d.h))
                     # Faces not seen now keep their place but lose their mouth
@@ -402,3 +431,81 @@ def face_track(video: Path, start: float, end: float) -> tuple[list[Sample], int
     finally:
         cap.release()
     return samples, src_w, src_h
+
+
+# ---------------------------------------------------------------------------
+# Matching lips to the voice
+# ---------------------------------------------------------------------------
+#
+# Mouth movement alone can't tell a talker from a listener who smiles, nods
+# or laughs. The talker's mouth moves *with* the voice: it opens as the sound
+# gets louder and closes in the small pauses between phrases. So each face's
+# mouth movement is weighted by how well it follows the loudness of the audio
+# over the few seconds around it.
+
+SYNC_WINDOW_SECONDS = 3.0  # on each side of a sample
+SYNC_MIN_SAMPLES = 8
+SYNC_BASE = 0.3  # weight of a face whose lips don't follow the voice at all
+
+
+def audio_envelope(video: Path, start: float, end: float, times: list[float]) -> list[float] | None:
+    """Loudness (log RMS) of the audio around each of `times` (seconds from
+    `start`), or None when the video has no audio."""
+    import subprocess
+
+    import numpy as np
+
+    rate = 8000
+    proc = subprocess.run(
+        ["ffmpeg", "-nostdin", "-loglevel", "error", "-ss", f"{start:.3f}",
+         "-t", f"{end - start:.3f}", "-i", str(video), "-vn", "-ac", "1",
+         "-ar", str(rate), "-f", "s16le", "-"],
+        capture_output=True,
+    )  # fmt: skip
+    if proc.returncode != 0 or not proc.stdout:
+        return None
+    pcm = np.frombuffer(proc.stdout, dtype=np.int16).astype(np.float32) / 32768
+    half = int(rate / SAMPLE_FPS / 2)
+    out = []
+    for t in times:
+        mid = int(t * rate)
+        chunk = pcm[max(0, mid - half) : mid + half]
+        rms = float(np.sqrt(np.mean(chunk**2))) if len(chunk) else 0.0
+        out.append(float(np.log10(rms + 1e-4)))
+    return out
+
+
+def _corr(a: list[float], b: list[float]) -> float:
+    n = len(a)
+    ma, mb = sum(a) / n, sum(b) / n
+    cov = sum((x - ma) * (y - mb) for x, y in zip(a, b, strict=True))
+    va = sum((x - ma) ** 2 for x in a)
+    vb = sum((y - mb) ** 2 for y in b)
+    return cov / (va * vb) ** 0.5 if va > 0 and vb > 0 else 0.0
+
+
+def sync_with_audio(samples: list[Sample], envelope: list[float] | None) -> list[Sample]:
+    """Samples whose face activity is weighted by lip-voice agreement."""
+    if not envelope or len(envelope) != len(samples):
+        return samples
+    series: dict[int, list[tuple[float, float, float]]] = {}  # track -> [(t, act, loud)]
+    for s, loud in zip(samples, envelope, strict=True):
+        for f in s.faces:
+            if f.activity is not None:
+                series.setdefault(f.track, []).append((s.t, f.activity, loud))
+
+    def weight(track: int, t: float) -> float:
+        near = [(a, v) for ts, a, v in series.get(track, []) if abs(ts - t) <= SYNC_WINDOW_SECONDS]
+        if len(near) < SYNC_MIN_SAMPLES:
+            return SYNC_BASE + 0.2  # not enough to judge: in between
+        r = _corr([a for a, _ in near], [v for _, v in near])
+        return SYNC_BASE + max(0.0, r)
+
+    out = []
+    for s in samples:
+        faces = tuple(
+            f if f.activity is None else replace(f, activity=f.activity * weight(f.track, s.t))
+            for f in s.faces
+        )
+        out.append(replace(s, faces=faces))
+    return out
