@@ -340,6 +340,49 @@ def test_no_split_for_a_single_interjection_or_neighbours():
     assert split._fits_one_crop(group, 16 / 9)
 
 
+def test_lips_that_follow_the_voice_beat_a_listener_who_moves_more():
+    import math
+    import random
+
+    rng = random.Random(1)
+    samples, loud = [], []
+    for i in range(120):
+        t = i / 6
+        talk = 0.5 + 0.5 * math.sin(t * 2.3)  # the speaker's loudness
+        listener = rng.uniform(0.0, 1.4)  # smiles and nods, louder or not
+        samples.append(
+            reframe.Sample(
+                t,
+                (
+                    reframe.Face(0, 0.2, 0.01, 0.6 * talk + 0.05),
+                    reframe.Face(1, 0.8, 0.01, 0.6 * listener),
+                ),
+            )
+        )
+        loud.append(math.log10(0.01 + talk))
+    synced = reframe.sync_with_audio(samples, loud)
+
+    def mean(track, ss):
+        v = [f.activity for s in ss for f in s.faces if f.track == track]
+        return sum(v) / len(v)
+
+    assert mean(1, samples) > mean(0, samples)  # by movement alone, the listener wins
+    assert mean(0, synced) > 1.5 * mean(1, synced)  # matched to the voice, the speaker does
+    assert reframe.sync_with_audio(samples, None) == samples
+
+
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")
+def test_audio_envelope_tracks_loudness(tmp_path):
+    clip = tmp_path / "a.wav"
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+         "sine=f=440:d=2,volume='if(lt(t,1),0.01,1)':eval=frame", str(clip)],
+        check=True,
+    )  # fmt: skip
+    env = reframe.audio_envelope(clip, 0.0, 2.0, [0.5, 1.5])
+    assert env is not None and env[1] > env[0] + 1.0
+
+
 # --- render (needs ffmpeg) ------------------------------------------------------
 
 ffmpeg = pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg not installed")

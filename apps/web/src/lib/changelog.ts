@@ -18,6 +18,26 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    date: "2026-10-08",
+    title: {
+      id: "Crop lebih tepat ke orang yang bicara",
+      en: "The crop finds the speaker more reliably",
+    },
+    items: [
+      {
+        kind: "fixed",
+        title: {
+          id: "Orang yang diam tidak lagi disorot",
+          en: "Silent listeners no longer framed",
+        },
+        body: {
+          id: "Gerak bibir tiap orang kini dicocokkan dengan suara, jadi pendengar yang tersenyum, mengangguk, atau ketawa tanpa suara tidak lagi dikira sedang bicara.",
+          en: "Each person's lip movement is now matched against the voice, so a listener who smiles, nods or laughs silently is no longer mistaken for the speaker.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-10-04",
     title: {
       id: "Edit klip, diskon, kode promo, dan ajak teman",

@@ -75,6 +75,8 @@ def render_clip(
     ]
     if settings.layout == "auto":
         samples, src_w, src_h = reframe.face_track(source, start, start + duration)
+        loudness = reframe.audio_envelope(source, start, start + duration, [s.t for s in samples])
+        samples = reframe.sync_with_audio(samples, loudness)
         keyframes = reframe.plan_speaker_crops(samples, clip_words)
         segments = split.plan_layout(
             samples, clip_words, keyframes, duration, src_w / max(src_h, 1)
